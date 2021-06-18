@@ -27,8 +27,6 @@ public:
 // 实现
 
 	DECLARE_MESSAGE_MAP()
-	afx_msg void OnBnClickedButtonInject();
-	afx_msg void OnEnChangeEditLog();
 };
 
 extern CMFCCreateProcessInjectApp theApp;
