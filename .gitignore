@@ -5,3 +5,6 @@
 .vs/
 Debug/
 Release/
+x64/
+*.pdb
+*.idb
