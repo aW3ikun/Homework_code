@@ -141,7 +141,7 @@ void CMFCCreateProcessInjectDlg::OnBnClickedButtonInject()
 		pszLog += "[+]文件地址正确! \r\n";
 		UpdateData(FALSE);
 		if (Inject(filePath,dllPath,pszLog)) {
-			pszLog += "[+]注入成功! \r\n";
+			pszLog += "[+]注入成功! \r\n ";
 			UpdateData(FALSE);
 		}
 		else {
