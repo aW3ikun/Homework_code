@@ -16,8 +16,6 @@
 
 BEGIN_MESSAGE_MAP(CMFCCreateProcessInjectApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
-	ON_BN_CLICKED(IDC_BUTTON_Inject, &CMFCCreateProcessInjectApp::OnBnClickedButtonInject)
-	ON_EN_CHANGE(IDC_EDIT_Log, &CMFCCreateProcessInjectApp::OnEnChangeEditLog)
 END_MESSAGE_MAP()
 
 
@@ -109,21 +107,11 @@ BOOL CMFCCreateProcessInjectApp::InitInstance()
 
 
 
-void CMFCCreateProcessInjectApp::OnBnClickedButtonInject()
-{
-	// TODO: 在此添加控件通知处理程序代码
-	TCHAR pszFilePath;
-	pszFilePath = GetDlgItemText(AfxGetMainWnd()->m_hWnd,IDC_EDIT_FilePath, NULL,0);
-}
 
 
-void CMFCCreateProcessInjectApp::OnEnChangeEditLog()
-{
-	// TODO:  如果该控件是 RICHEDIT 控件，它将不
-	// 发送此通知，除非重写 CWinApp::OnInitDialog()
-	// 函数并调用 CRichEditCtrl().SetEventMask()，
-	// 同时将 ENM_CHANGE 标志“或”运算到掩码中。
 
-	// TODO:  在此添加控件通知处理程序代码
 
-}
+
+
+
+
