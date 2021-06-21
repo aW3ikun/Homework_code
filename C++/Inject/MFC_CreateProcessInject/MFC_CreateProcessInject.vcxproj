@@ -184,6 +184,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="help.h" />
     <ClInclude Include="MFC_CreateProcessInject.h" />
     <ClInclude Include="MFC_CreateProcessInjectDlg.h" />
     <ClInclude Include="pch.h" />
@@ -191,6 +192,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="help.cpp" />
     <ClCompile Include="MFC_CreateProcessInject.cpp" />
     <ClCompile Include="MFC_CreateProcessInjectDlg.cpp" />
     <ClCompile Include="pch.cpp">

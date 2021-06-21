@@ -37,4 +37,7 @@ public:
 	afx_msg void OnBnClickedButtonInject();
 	CString pszLog;
 	afx_msg void OnEnChangeEditLog();
+	afx_msg void OnEnChangeEditDllpath();
+	afx_msg void OnBnClickedButtonSelectdll();
+	afx_msg void OnEnUpdateEditLog();
 };

@@ -7,6 +7,7 @@
 #include "MFC_CreateProcessInject.h"
 #include "MFC_CreateProcessInjectDlg.h"
 #include "afxdialogex.h"
+#include"help.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -37,6 +38,9 @@ BEGIN_MESSAGE_MAP(CMFCCreateProcessInjectDlg, CDialog)
 	ON_EN_CHANGE(IDC_EDIT_FilePath, &CMFCCreateProcessInjectDlg::OnEnChangeEditFilepath)
 	ON_BN_CLICKED(IDC_BUTTON_Inject, &CMFCCreateProcessInjectDlg::OnBnClickedButtonInject)
 	ON_EN_CHANGE(IDC_EDIT_Log, &CMFCCreateProcessInjectDlg::OnEnChangeEditLog)
+	ON_EN_CHANGE(IDC_EDIT_DllPath, &CMFCCreateProcessInjectDlg::OnEnChangeEditDllpath)
+	ON_BN_CLICKED(IDC_BUTTON_SelectDll, &CMFCCreateProcessInjectDlg::OnBnClickedButtonSelectdll)
+	ON_EN_UPDATE(IDC_EDIT_Log, &CMFCCreateProcessInjectDlg::OnEnUpdateEditLog)
 END_MESSAGE_MAP()
 
 
@@ -97,7 +101,7 @@ void CMFCCreateProcessInjectDlg::OnBnClickedButtonSelectfile()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	TCHAR szFilters[] = L"EXE Files (*.exe) |*.exe|All Files(*.*) |*.*|";
-	CFileDialog fileDialog(TRUE, L"文件选择对话框",NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+	CFileDialog fileDialog(TRUE, L"PE文件选择对话框",NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
 
 	if (fileDialog.DoModal() == IDOK) {
 		CString pathName = fileDialog.GetPathName();
@@ -123,11 +127,28 @@ void CMFCCreateProcessInjectDlg::OnBnClickedButtonInject()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	CString filePath;
-	GetDlgItemText(IDC_EDIT_FilePath,filePath);
-	if (!filePath.IsEmpty()) {
-		
+	CString dllPath;
+	GetDlgItemText(IDC_EDIT_FilePath, filePath);
+	GetDlgItemText(IDC_EDIT_DllPath, dllPath);
+
+
+#ifdef DEBUG
+	if (!filePath.IsEmpty()){
+#else
+	if (!filePath.IsEmpty() && !dllPath.IsEmpty()) {
+#endif
+
 		pszLog += "[+]文件地址正确! \r\n";
 		UpdateData(FALSE);
+		if (Inject(filePath,dllPath,pszLog)) {
+			pszLog += "[+]注入成功! \r\n ";
+			UpdateData(FALSE);
+		}
+		else {
+			pszLog += "[-]注入失败! \r\n";
+			UpdateData(FALSE);
+		}
+
 	}
 	else {
 		pszLog += "[-]文件地址错误! \r\n";
@@ -145,7 +166,48 @@ void CMFCCreateProcessInjectDlg::OnEnChangeEditLog()
 
 	// TODO:  在此添加控件通知处理程序代码
 
-	CEdit* edit = (CEdit*)GetDlgItem(IDC_EDIT_FilePath);
+	CEdit* edit = (CEdit*)GetDlgItem(IDC_EDIT_Log);
 	edit->SetWindowTextW(pszLog);
+	//自动滚动
+	edit->LineScroll(edit->GetLineCount());
+	
+}
+
+
+void CMFCCreateProcessInjectDlg::OnEnChangeEditDllpath()
+{
+	// TODO:  如果该控件是 RICHEDIT 控件，它将不
+	// 发送此通知，除非重写 CDialog::OnInitDialog()
+	// 函数并调用 CRichEditCtrl().SetEventMask()，
+	// 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+	// TODO:  在此添加控件通知处理程序代码
+}
+
+
+void CMFCCreateProcessInjectDlg::OnBnClickedButtonSelectdll()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	TCHAR szFilters[] = L"DLL Files (*.dll) |*.dll|All Files(*.*) |*.*|";
+	CFileDialog fileDialog(TRUE, L"DLL文件选择对话框", NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+
+	if (fileDialog.DoModal() == IDOK) {
+		CString pathName = fileDialog.GetPathName();
+
+		CEdit* edit = (CEdit*)GetDlgItem(IDC_EDIT_DllPath);
+		edit->SetWindowTextW(pathName);
+	}
+}
+
+
+void CMFCCreateProcessInjectDlg::OnEnUpdateEditLog()
+{
+	// TODO:  如果该控件是 RICHEDIT 控件，它将不
+	// 发送此通知，除非重写 CDialog::OnInitDialog()
+	// 函数，以将 EM_SETEVENTMASK 消息发送到该控件，
+	// 同时将 ENM_UPDATE 标志“或”运算到 lParam 掩码中。
+
+	// TODO:  在此添加控件通知处理程序代码
 	
 }
