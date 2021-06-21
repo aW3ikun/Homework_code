@@ -96,7 +96,7 @@ BOOL Inject(CString pszfilePath, CString pszdllPath, CString& pszLog) {
 
 				//申请静态变量空间
 				//申请shellcode空间 
-				int a = pszdllPath.GetLength() + 1;
+
 				if (LPVOID lpDllPath = VirtualAllocEx(pi.hProcess, NULL, pszdllPath.GetLength()*2 + 1, MEM_COMMIT, PAGE_READWRITE)) {
 					pszLog += "[+]申请Dll路径内存成功! \r\n";
 					if (WriteProcessMemory(pi.hProcess, lpDllPath, pszdllPath, pszdllPath.GetLength()*2, NULL)) {

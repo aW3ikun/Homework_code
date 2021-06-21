@@ -132,11 +132,7 @@ void CMFCCreateProcessInjectDlg::OnBnClickedButtonInject()
 	GetDlgItemText(IDC_EDIT_DllPath, dllPath);
 
 
-#ifdef DEBUG
-	if (!filePath.IsEmpty()){
-#else
 	if (!filePath.IsEmpty() && !dllPath.IsEmpty()) {
-#endif
 
 		pszLog += "[+]文件地址正确! \r\n";
 		UpdateData(FALSE);
