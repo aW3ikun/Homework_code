@@ -21,12 +21,12 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-// Dialog Data
+	// Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_ABOUTBOX };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
 // Implementation
@@ -67,6 +67,8 @@ BEGIN_MESSAGE_MAP(CdemoDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON_Inject, &CdemoDlg::OnBnClickedButtonInject)
+	ON_BN_CLICKED(IDC_BUTTON_Dll, &CdemoDlg::OnBnClickedButtonDll)
+	ON_BN_CLICKED(IDC_BUTTON_UnLoad, &CdemoDlg::OnBnClickedButtonUnload)
 END_MESSAGE_MAP()
 
 
@@ -168,16 +170,56 @@ void CdemoDlg::OnBnClickedButtonInject()
 	if (dwProcessId == 0) {
 		dwProcessId = GetCurrentProcessId();
 	}
-	TCHAR szLibFile[MAX_PATH];
-	memset(szLibFile, 0, sizeof(szLibFile));
-	GetModuleFileName(NULL, szLibFile, _countof(szLibFile));
-	PTSTR pFileName =  _tcsrchr(szLibFile, TEXT('\\'))+1;
-	_tcscpy_s(pFileName,sizeof(szLibFile)/sizeof(szLibFile[0])- lstrlen(szLibFile)*sizeof(TCHAR), TEXT("demo_dll.dll"));
-	if (InjectLib(dwProcessId, pFileName)) {
-		chVERIFY(FreeLib(dwProcessId, pFileName));
-		chMB("Inject Success!\tFreeLIB Success!");
+	CString dllPath;
+	GetDlgItemText(IDC_EDIT_DllPath, dllPath);
+	if (!dllPath.IsEmpty()) {
+		if (InjectLib(dwProcessId, (LPWSTR)dllPath.GetString())) {
+			chMB("Inject Success!\t");
+		}
+		else {
+			chMB("Inject Failed!");
+		}
 	}
 	else {
-		chMB("Inject Failed!");
+		chMB("Dll Empty!");
+	}
+}
+
+
+void CdemoDlg::OnBnClickedButtonDll()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	TCHAR szFilters[] = L"DLL Files (*.dll) |*.dll|All Files(*.*) |*.*|";
+	CFileDialog fileDialog(TRUE, L"DLL文件选择对话框", NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+
+	if (fileDialog.DoModal() == IDOK) {
+		CString pathName = fileDialog.GetPathName();
+
+		CEdit* edit = (CEdit*)GetDlgItem(IDC_EDIT_DllPath);
+		edit->SetWindowTextW(pathName);
+	}
+}
+
+
+void CdemoDlg::OnBnClickedButtonUnload()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CString dllPath;
+	GetDlgItemText(IDC_EDIT_DllPath, dllPath);
+	if (!dllPath.IsEmpty()) {
+		DWORD dwProcessId = GetDlgItemInt(IDC_EDIT_ProcessId, NULL, 0);
+		if (dwProcessId == 0) {
+			dwProcessId = GetCurrentProcessId();
+		}
+
+		if (FreeLib(dwProcessId, (LPWSTR)dllPath.GetString())) {
+			chMB("Free Success!\t");
+		}
+		else {
+			chMB("Free Failed!");
+		}
+	}
+	else {
+		chMB("Dll Empty!");
 	}
 }

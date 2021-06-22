@@ -33,4 +33,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedButtonInject();
+	afx_msg void OnBnClickedButtonDll();
+	afx_msg void OnEnChangeEditDllpath();
+	afx_msg void OnEnChangeEditProcessid();
+	afx_msg void OnBnClickedButtonUnload();
 };
