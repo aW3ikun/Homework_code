@@ -21,6 +21,9 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="help.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="detours\detours.h">
@@ -31,6 +34,9 @@
     </ClInclude>
     <ClInclude Include="detours\syelog.h">
       <Filter>头文件\detours</Filter>
+    </ClInclude>
+    <ClInclude Include="help.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
