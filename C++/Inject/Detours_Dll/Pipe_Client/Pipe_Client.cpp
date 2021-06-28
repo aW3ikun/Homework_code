@@ -7,7 +7,7 @@
 #define BUFSIZE 512
 int main()
 {
-	const TCHAR lpszPipename[] = L"\\\\.\\pipe\\Pipe2";
+	const TCHAR lpszPipename[] = L"\\\\.\\pipe\\detourspipe";
 	HANDLE hPipe;
 	DWORD dwMode, cbToWrite, fSuccess;
 	while (1)
@@ -59,9 +59,12 @@ int main()
 
 	// Send a message to the pipe server. 
 	TCHAR  lpvMessage[BUFSIZE] = { 0 };
-	DWORD cbWritten;
-	wscanf_s(L"%s", lpvMessage,(unsigned)_countof(lpvMessage));
+	DWORD cbWritten = 0;
+	GetModuleFileName(NULL, lpvMessage, BUFSIZE);
+	//wscanf_s(L"%s", lpvMessage,(unsigned)_countof(lpvMessage));
 	cbToWrite = (lstrlen(lpvMessage) + 1) * sizeof(TCHAR);
+	//TCHAR lpszStr[BUFSIZE] = { 0 };
+
 
 	fSuccess = WriteFile(
 		hPipe,                  // pipe handle 
