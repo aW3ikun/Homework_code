@@ -2,7 +2,7 @@
 
 #include<iostream>
 #include"help.h"
-#include"Hook.h"
+
 
 
 BOOL APIENTRY DllMain(HMODULE hModule,
@@ -10,23 +10,29 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	LPVOID lpReserved
 )
 {
-	DetoursMyHook *mydetour = new DetoursMyHook();
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH: {
 		TCHAR lpTemp[BUFSIZE] = { 0 };
+		TCHAR lpMessage[BUFSIZE] = { 0 };
 		if (GetModuleFileNameW(NULL, lpTemp, BUFSIZE)) {
-			wsprintf(lpMessage,L"[+]Injected into %s \n", lpTemp);
+			wsprintf(lpMessage, L"[+]Injected into %s \n", lpTemp);
 			Log(lpMessage);
 		}
-		mydetour->InsertMap(Sum(), TRUE);
+		SetHook();
+		break;
+
+	}
+	case DLL_THREAD_ATTACH: {
+		break;
+
+	}
+	case DLL_THREAD_DETACH: {
 		break;
 	}
-	case DLL_THREAD_ATTACH:
-	case DLL_THREAD_DETACH:
 	case DLL_PROCESS_DETACH:
 	{
-		delete mydetour;
+		UnHook();
 		break;
 	}
 		break;

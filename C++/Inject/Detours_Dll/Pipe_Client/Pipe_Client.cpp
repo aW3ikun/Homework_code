@@ -8,7 +8,6 @@
 int main()
 {
 	HMODULE hLib = LoadLibrary(L"Detours_Dll.dll");
-	int a = GetLastError();
 	const TCHAR lpszPipename[] = L"\\\\.\\pipe\\detourspipe";
 	HANDLE hPipe;
 	DWORD dwMode, cbToWrite, fSuccess;
@@ -58,7 +57,6 @@ int main()
 		printf("SetNamedPipeHandleState failed. GLE=%d\n", GetLastError());
 		return -1;
 	}
-
 	while(1){
 		// Send a message to the pipe server. 
 		TCHAR  lpvMessage[BUFSIZE] = { 0 };
@@ -87,6 +85,7 @@ int main()
 	system("pause");
 
 	CloseHandle(hPipe);
+	FreeLibrary(hLib);
 	return 0;
 }
 
