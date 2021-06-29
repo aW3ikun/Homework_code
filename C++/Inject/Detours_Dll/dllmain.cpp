@@ -2,12 +2,15 @@
 
 #include<iostream>
 #include"help.h"
+#include"Hook.h"
+
 
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,
 	LPVOID lpReserved
 )
 {
+	DetoursMyHook *mydetour = new DetoursMyHook();
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH: {
@@ -16,14 +19,15 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 			wsprintf(lpMessage,L"[+]Injected into %s \n", lpTemp);
 			Log(lpMessage);
 		}
-		MessageBox(NULL, L"_HOOK", NULL, MB_OK);
-		Hook();
+		mydetour->InsertMap(Sum(), TRUE);
+		break;
 	}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
 	case DLL_PROCESS_DETACH:
 	{
-		UnHook();
+		delete mydetour;
+		break;
 	}
 		break;
 	}

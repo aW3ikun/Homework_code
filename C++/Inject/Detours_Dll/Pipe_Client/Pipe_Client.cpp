@@ -7,6 +7,8 @@
 #define BUFSIZE 512
 int main()
 {
+	HMODULE hLib = LoadLibrary(L"Detours_Dll.dll");
+	int a = GetLastError();
 	const TCHAR lpszPipename[] = L"\\\\.\\pipe\\detourspipe";
 	HANDLE hPipe;
 	DWORD dwMode, cbToWrite, fSuccess;
@@ -57,32 +59,34 @@ int main()
 		return -1;
 	}
 
-	// Send a message to the pipe server. 
-	TCHAR  lpvMessage[BUFSIZE] = { 0 };
-	DWORD cbWritten = 0;
-	GetModuleFileName(NULL, lpvMessage, BUFSIZE);
-	//wscanf_s(L"%s", lpvMessage,(unsigned)_countof(lpvMessage));
-	cbToWrite = (lstrlen(lpvMessage) + 1) * sizeof(TCHAR);
-	//TCHAR lpszStr[BUFSIZE] = { 0 };
+	while(1){
+		// Send a message to the pipe server. 
+		TCHAR  lpvMessage[BUFSIZE] = { 0 };
+		DWORD cbWritten = 0;
+		//GetModuleFileName(NULL, lpvMessage, BUFSIZE);
+		wscanf_s(L"%s", lpvMessage, (unsigned)_countof(lpvMessage));
+		cbToWrite = (lstrlen(lpvMessage) + 1) * sizeof(TCHAR);
+		//TCHAR lpszStr[BUFSIZE] = { 0 };
 
 
-	fSuccess = WriteFile(
-		hPipe,                  // pipe handle 
-		lpvMessage,             // message 
-		cbToWrite,              // message length 
-		&cbWritten,             // bytes written 
-		NULL);                  // not overlapped 
+		fSuccess = WriteFile(
+			hPipe,                  // pipe handle 
+			lpvMessage,             // message 
+			cbToWrite,              // message length 
+			&cbWritten,             // bytes written 
+			NULL);                  // not overlapped 
 
-	if (!fSuccess)
-	{
-		printf("WriteFile to pipe failed. GLE=%d\n", GetLastError());
-		return -1;
+		if (!fSuccess)
+		{
+			printf("WriteFile to pipe failed. GLE=%d\n", GetLastError());
+			return -1;
+		}
 	}
+
 
 	system("pause");
 
 	CloseHandle(hPipe);
-
 	return 0;
 }
 
