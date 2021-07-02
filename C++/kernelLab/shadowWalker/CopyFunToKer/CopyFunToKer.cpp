@@ -2,11 +2,14 @@
 #include<stdlib.h>
 #include<windows.h>
 
+#define PTE(x)	((DWORD *)(0xC0000000 + ((x >> 12) << 3))) 
+#define PDE(x)	((DWORD *)(0xC0060000 + ((x >> 21) << 3)))
 
 #define K_ESP 0x8003f3f0
 #define K_ESP_4 0x8003f3f4
 #define K_TARGET_CR3 0x8003f3e0
 #define K_CR2 0x8003f3e4
+
 
 //target 0x8003f120
 //0x8053e545
@@ -18,6 +21,7 @@ char* p;
 //0x0401080
 void __declspec(naked) IdtEntry1()
 {
+
 	p = (char*)0x8003f130;
 	for (i = 0; i < 256; i++)
 	{
@@ -54,16 +58,17 @@ void __declspec(naked) JmpTarget() {
 		push eax
 		mov eax, cr3
 		cmp eax, ds: [K_TARGET_CR3]
-		jnz End
+		jnz PASS
 
-		mov eax, [esp + 4]
-		mov ds : [K_ESP] , eax
-		mov eax, [esp + 8]
-		mov ds : [K_ESP_4] , eax
-		mov eax, cr2
-		mov ds : [K_CR2] , eax
+		//0x412000
+		mov eax,cr2
+		shr eax,0xc
+		cmp eax,0x412
+		jnz PASS
 
-		End :
+
+
+PASS :
 		pop eax
 			mov     word ptr[esp + 2], 0
 			push 0x80541457
