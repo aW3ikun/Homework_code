@@ -7,13 +7,13 @@
 
 #define K_ESP 0x8003f3f0 //error_code
 #define K_ESP_4 0x8003f3f4 //eip
-#define K_TARGET_CR3 0x8003f3e0 
+#define K_TARGET_CR3 0x8003f3e0
 #define K_CR2 0x8003f3e4
 
 #define K_REAL_PTE0	0x8003f3d0 
 #define K_REAL_PTE1 0x8003f3d4 
-#define K_FAKE_PTE0 0x8003f3c0 
-#define K_FAKE_PTE1 0x8003f3c4 
+#define K_FAKE_PTE0 0x8003f3d8
+#define K_FAKE_PTE1 0x8003f3dc
 
 
 //KiTrap0E
@@ -39,30 +39,19 @@ void __declspec(naked) IdtEntry1()
 {
 	*(DWORD*)K_REAL_PTE0 = PTE(0x412000)[0];
 	*(DWORD*)K_REAL_PTE1 = PTE(0x412000)[1];
-	*(DWORD*)K_FAKE_PTE0 = PTE(0x412000)[0];
-	*(DWORD*)K_FAKE_PTE1 = PTE(0x412000)[1];
+	*(DWORD*)K_FAKE_PTE0 = PTE(0x41c000)[0];
+	*(DWORD*)K_FAKE_PTE1 = PTE(0x41c000)[1];
 
+	PTE(0x412000)[0] = 0x0;
+	PTE(0x412000)[1] = 0x0;
 
 	__asm {
 		mov eax, cr3
 		mov ds : [K_TARGET_CR3] , eax
 
-		mov eax, ds : [K_ESP]
-		mov g_esp, eax
-
-		mov eax, ds : [K_ESP_4]
-		mov g_esp_4, eax
-
-		mov eax, ds : [K_CR2]
-		mov g_cr2, eax
-
-		xor eax, eax
-		mov ds : [K_ESP_4] , eax
-
 		iretd
 	}
 }
-
 #pragma code_seg(".my_code") __declspec(allocate(".my_code ")) void go();
 #pragma code_seg(".my_code") __declspec(allocate(".my_code ")) void main();
 void go() {
@@ -72,16 +61,23 @@ void go() {
 }
 //eq 8003f500 0040ee00`00081080
 void  main() {
-	FakePage[0] = 0;
+	__asm {
+		jmp L
+		ret	//00412018
+	}
+L:
 	if ((DWORD)IdtEntry1 != 0x0401080) {
 		printf("wrong addr：%p\n", IdtEntry1);
 		system("pause");
 		exit(-1);
 	}
+	//使34行声明有效
+	FakePage[0] = 0;
+	go();
+	int i = 0;
 	while(1){
-		go();
-		if (g_esp_4)
-			printf("error_code: %p eip: %p  cr2: %p\n", g_esp, g_esp_4, g_cr2);
+
+		printf("%d\n", i++);
 		Sleep(1000);
 	}
 
