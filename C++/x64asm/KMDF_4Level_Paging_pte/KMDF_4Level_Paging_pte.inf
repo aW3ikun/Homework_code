@@ -1,0 +1,87 @@
+;
+; KMDF_4Level_Paging_pte.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=Sample ; TODO: edit Class
+ClassGuid={78A1C341-4539-11d3-B88D-00C04FAD5171} ; TODO: edit ClassGuid
+Provider=%ManufacturerName%
+CatalogFile=KMDF_4Level_Paging_pte.cat
+DriverVer= ; TODO: set DriverVer in stampinf property pages
+PnpLockDown=1
+
+[DestinationDirs]
+DefaultDestDir = 12
+KMDF_4Level_Paging_pte_Device_CoInstaller_CopyFiles = 11
+
+; ================= Class section =====================
+
+[ClassInstall32]
+Addreg=SampleClassReg
+
+[SampleClassReg]
+HKR,,,0,%ClassName%
+HKR,,Icon,,-5
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+KMDF_4Level_Paging_pte.sys  = 1,,
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$
+
+[Standard.NT$ARCH$]
+%KMDF_4Level_Paging_pte.DeviceDesc%=KMDF_4Level_Paging_pte_Device, Root\KMDF_4Level_Paging_pte ; TODO: edit hw-id
+
+[KMDF_4Level_Paging_pte_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+KMDF_4Level_Paging_pte.sys
+
+;-------------- Service installation
+[KMDF_4Level_Paging_pte_Device.NT.Services]
+AddService = KMDF_4Level_Paging_pte,%SPSVCINST_ASSOCSERVICE%, KMDF_4Level_Paging_pte_Service_Inst
+
+; -------------- KMDF_4Level_Paging_pte driver install sections
+[KMDF_4Level_Paging_pte_Service_Inst]
+DisplayName    = %KMDF_4Level_Paging_pte.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\KMDF_4Level_Paging_pte.sys
+
+;
+;--- KMDF_4Level_Paging_pte_Device Coinstaller installation ------
+;
+
+[KMDF_4Level_Paging_pte_Device.NT.CoInstallers]
+AddReg=KMDF_4Level_Paging_pte_Device_CoInstaller_AddReg
+CopyFiles=KMDF_4Level_Paging_pte_Device_CoInstaller_CopyFiles
+
+[KMDF_4Level_Paging_pte_Device_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+[KMDF_4Level_Paging_pte_Device_CoInstaller_CopyFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[KMDF_4Level_Paging_pte_Device.NT.Wdf]
+KmdfService =  KMDF_4Level_Paging_pte, KMDF_4Level_Paging_pte_wdfsect
+[KMDF_4Level_Paging_pte_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="<Your manufacturer name>" ;TODO: Replace with your manufacturer name
+ClassName="Samples" ; TODO: edit ClassName
+DiskName = "KMDF_4Level_Paging_pte Installation Disk"
+KMDF_4Level_Paging_pte.DeviceDesc = "KMDF_4Level_Paging_pte Device"
+KMDF_4Level_Paging_pte.SVCDESC = "KMDF_4Level_Paging_pte Service"
