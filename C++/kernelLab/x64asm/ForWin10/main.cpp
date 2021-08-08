@@ -7,6 +7,9 @@
 //eq fffff803`4f25b218 00000000`00000001
 //r cr4 = 0x270678
 
+//amd
+//eq fffff804`41a5b210  4000ee00`001010e0
+//eq fffff804`41a5b218 1
 extern "C" void IdtEntry();
 extern "C" void go();
 extern "C" ULONG64 x;
@@ -22,4 +25,4 @@ int main() {
 	printf("%p\n",x);
 	system("pause");
 	return 0;
-}
+}	
