@@ -1,4 +1,6 @@
 #include<ntddk.h>
+#include "common.h"
+#include "scan.h"
 
 
 
@@ -6,6 +8,7 @@ ULONG64 g_PTE_BASE;
 ULONG64 g_PDE_BASE;
 ULONG64 g_PPE_BASE;
 ULONG64 g_PXE_BASE;
+
 ULONG64 GetPteAddress(ULONG64 addr) {
 	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 12) << 3) + g_PTE_BASE);
 }
@@ -16,7 +19,7 @@ ULONG64 GetPpeAddress(ULONG64 addr) {
 	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 30) << 3) + g_PPE_BASE);
 }
 ULONG64 GetPxeAddress(ULONG64 addr) {
-	return (ULONG64)((((addr & 0xFFFFFFFFFFFF )>> 39) << 3) + g_PXE_BASE);
+	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 39) << 3) + g_PXE_BASE);
 }
 
 //https://bbs.pediy.com/thread-262432.htm
@@ -51,7 +54,7 @@ VOID DriverUnload(PDRIVER_OBJECT pDriverObject)
 	KdPrint(("ÍË³öÇý¶¯\n"));
 }
 
-
+//C:\Users\kernelDebug\Desktop\KMDF_4Level_Paging_pte.sys
 NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObject, PUNICODE_STRING pRegPath)
 {
 	pDriverObject->DriverUnload = DriverUnload;
@@ -63,14 +66,14 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObject, PUNICODE_STRING pRegPath)
 	//g_PTE_BASE = (ULONG64)PTEBase;
 	//DbgPrint("%p\n", g_PTE_BASE);
 
-	g_PDE_BASE = GetPteAddress(g_PTE_BASE);
-	g_PPE_BASE = GetPteAddress(g_PDE_BASE);
-	g_PXE_BASE = GetPteAddress(g_PPE_BASE);
+	g_PDE_BASE = (g_PTE_BASE + ((g_PTE_BASE & 0xffffffffffff) >> 9));
+	g_PPE_BASE = (g_PTE_BASE + ((g_PDE_BASE & 0xffffffffffff) >> 9));
+	g_PXE_BASE = (g_PTE_BASE + ((g_PPE_BASE & 0xffffffffffff) >> 9));
+	DbgPrint("pte at: %p\n", g_PTE_BASE);
+	DbgPrint("pde at: %p\n", g_PDE_BASE);
+	DbgPrint("ppe at: %p\n", g_PPE_BASE);
+	DbgPrint("pxe at: %p\n", g_PXE_BASE);
 
-	DbgPrint("PTE: %p\n", GetPteAddress((PVOID)transfer_address));
-	DbgPrint("PDE: %p\n", GetPdeAddress((PVOID)transfer_address));
-	DbgPrint("PPE: %p\n", GetPpeAddress((PVOID)transfer_address));
-	DbgPrint("PXE: %p\n", GetPxeAddress((PVOID)transfer_address));
-
+	ScanBigPool();
 	return STATUS_SUCCESS;
 }
