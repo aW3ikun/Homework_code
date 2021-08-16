@@ -68,7 +68,7 @@ NTSTATUS ScanBigPool()
 
                 if ((pte & 0x8000000000000000) == 0 && (pte & 1)) {
                     pte |= 0x8000000000000000;
-                    *ppte = pte;
+                    //*ppte = pte;
                     DbgPrint("addr: %p, size: %p, pte: %p, nom\n", addr, size, pte);
                     num += 1;
                 }

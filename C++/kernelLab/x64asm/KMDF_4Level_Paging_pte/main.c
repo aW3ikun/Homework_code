@@ -1,4 +1,4 @@
-#include<ntddk.h>
+#include <ntddk.h>
 #include "common.h"
 #include "scan.h"
 
@@ -8,19 +8,19 @@ ULONG64 g_PTE_BASE;
 ULONG64 g_PDE_BASE;
 ULONG64 g_PPE_BASE;
 ULONG64 g_PXE_BASE;
-
-ULONG64 GetPteAddress(ULONG64 addr) {
-	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 12) << 3) + g_PTE_BASE);
-}
-ULONG64 GetPdeAddress(ULONG64 addr) {
-	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 21) << 3) + g_PDE_BASE);
-}
-ULONG64 GetPpeAddress(ULONG64 addr) {
-	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 30) << 3) + g_PPE_BASE);
-}
-ULONG64 GetPxeAddress(ULONG64 addr) {
-	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 39) << 3) + g_PXE_BASE);
-}
+//
+//ULONG64 GetPteAddress(ULONG64 addr) {
+//	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 12) << 3) + g_PTE_BASE);
+//}
+//ULONG64 GetPdeAddress(ULONG64 addr) {
+//	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 21) << 3) + g_PDE_BASE);
+//}
+//ULONG64 GetPpeAddress(ULONG64 addr) {
+//	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 30) << 3) + g_PPE_BASE);
+//}
+//ULONG64 GetPxeAddress(ULONG64 addr) {
+//	return (ULONG64)((((addr & 0xFFFFFFFFFFFF) >> 39) << 3) + g_PXE_BASE);
+//}
 
 //https://bbs.pediy.com/thread-262432.htm
 //根据cr3获取pte_base
@@ -74,6 +74,8 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObject, PUNICODE_STRING pRegPath)
 	DbgPrint("ppe at: %p\n", g_PPE_BASE);
 	DbgPrint("pxe at: %p\n", g_PXE_BASE);
 
+
 	ScanBigPool();
+	__debugbreak();
 	return STATUS_SUCCESS;
 }
