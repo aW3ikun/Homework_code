@@ -25,14 +25,13 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		break;
 	}
 	case DLL_THREAD_ATTACH:
-	case DLL_THREAD_DETACH: {
-		UNIATHOOK();
 		break;
-	}
-	case DLL_PROCESS_DETACH: {
-		UNIATHOOK();
+	case DLL_THREAD_DETACH:
 		break;
-	}
+	//case DLL_PROCESS_DETACH: {
+	//	UNIATHOOK();
+	//	break;
+	//}
 
 	}
 	return TRUE;
@@ -88,16 +87,17 @@ int WINAPI MyMessageBoxW(HWND    hWnd,
 VOID IATHOOK() {
 	ulFunc = GetImportDirectory("user32.dll", "MessageBoxW");
 	DWORD oldProtected;
-	VirtualProtect((LPVOID)ulFunc, 0x8, PAGE_EXECUTE_READWRITE, &oldProtected);
+	VirtualProtect((LPVOID)ulFunc, sizeof(ULONG_PTR), PAGE_EXECUTE_READWRITE, &oldProtected);
 	OldMessageBoxW = *(PULONG_PTR)ulFunc;
 	*(PULONG_PTR)ulFunc = MyMessageBoxW;
-	VirtualProtect(ulFunc, 0x8, oldProtected, &oldProtected);
+	VirtualProtect(ulFunc, sizeof(ULONG_PTR), oldProtected, &oldProtected);
 
 
 }
-VOID UNIATHOOK() {
-	DWORD oldProtected;
-	VirtualProtect(ulFunc, 0x8, PAGE_EXECUTE_READWRITE, &oldProtected);
-	*(PULONG_PTR)ulFunc = OldMessageBoxW;
-	VirtualProtect(ulFunc, 0x8, oldProtected, &oldProtected);
-}
+//卸载会出现线程错误
+//VOID UNIATHOOK() {
+//	DWORD oldProtected;
+//	VirtualProtect(ulFunc, sizeof(ULONG_PTR), PAGE_EXECUTE_READWRITE, &oldProtected);
+//	*(PULONG_PTR)ulFunc = OldMessageBoxW;
+//	VirtualProtect(ulFunc, sizeof(ULONG_PTR), oldProtected, &oldProtected);
+//}
