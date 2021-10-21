@@ -141,6 +141,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.c" />
+    <ClCompile Include="pe.c" />
+    <ClCompile Include="_global.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pe.h" />
+    <ClInclude Include="_global.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -18,5 +18,19 @@
     <ClCompile Include="main.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="pe.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="_global.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pe.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="_global.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
