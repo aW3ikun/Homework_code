@@ -125,28 +125,13 @@ PCHAR AddFileName(PCHAR pFileName) {
 
 //有80字节空间就正常扩充,另一个函数添加数据
 BOOL AddOneSectionNormal(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
-	DWORD	dwLastVirtualSize = 0;
-	DWORD	dwLastVirtualAddress = 0;
-	DWORD	dwLastSizeOfRawData = 0;
-	DWORD	dwLastPointerToRawData = 0;
-	PEALIGNMENT pPeAlignment = { 0 };
-	//获取最后一个段的参数
-	if (pZero != NULL) {
-		PIMAGE_SECTION_HEADER pLastSectionHeader = (PIMAGE_SECTION_HEADER)((ULONG_PTR)pZero - sizeof(IMAGE_SECTION_HEADER));
-		dwLastVirtualSize = pLastSectionHeader->Misc.VirtualSize;
-		dwLastVirtualAddress = pLastSectionHeader->VirtualAddress;
-		dwLastSizeOfRawData = pLastSectionHeader->SizeOfRawData;
-		dwLastPointerToRawData = pLastSectionHeader->PointerToRawData;
+	DWORD	dwStartVirtualAddress = 0;
+	DWORD	dwStartFileAddress = 0;
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
 
-		GetAlignment(pDosHeader, &pPeAlignment);
-	}
-	else {
-		printf("[-]识别最后一个节表失败\n");
+	if (!CalcSectionTableAddress(pDosHeader ,&dwStartVirtualAddress, &dwStartFileAddress)) {
 		return FALSE;
 	}
-	//计算该填充的值
-	DWORD dwStartVirtualAddress = GetStartAddress(pPeAlignment.SectionAlignment, dwLastVirtualSize, dwLastVirtualAddress);
-	DWORD dwStartFileAddress = GetStartAddress(pPeAlignment.FileAlignment, dwLastSizeOfRawData, dwLastPointerToRawData);
 	//初始化
 	IMAGE_SECTION_HEADER	MySectionHeader = { ".tttt",dwSectionSize,
 		dwStartVirtualAddress,dwSectionSize,
@@ -159,8 +144,8 @@ BOOL AddOneSectionNormal(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 
 	//修改PE头中节的数量NumberOfSections
 	//修改SizeOfImage的大小
-	SetNumberOfSections(pDosHeader, 1);
-	SetSizeOfImage(pDosHeader, dwSectionSize);
+	SetNumberOfSections(pNtHeader, 1);
+	SetSizeOfImage(pNtHeader, dwSectionSize);
 
 	//修改其他东西
 	// do sth...
@@ -175,7 +160,46 @@ BOOL AddOneSectionNormal(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 修改e_lfanew
 再添加一个段
 */
-BOOL	AddSectionAdvanceNtHeader(PCHAR pSectionName, DWORD dwSectionSize, BYTE bPadding, PCHAR	pFileName) {
+BOOL	AddSectionAdvanceNtHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
+	DWORD	dwStartVirtualAddress = 0;
+	DWORD	dwStartFileAddress = 0;
+	DWORD	dwSizeOfSectionHeader = GetSizeOfSectionHeader();
+
+	if (!CalcSectionTableAddress(pDosHeader, &dwStartVirtualAddress, &dwStartFileAddress)) {
+		return FALSE;
+	}
+	//初始化
+	IMAGE_SECTION_HEADER	MySectionHeader = { ".tttt",dwSectionSize,
+		dwStartVirtualAddress,dwSectionSize,
+		dwStartFileAddress,0,0,0,0,
+		IMAGE_SCN_CNT_CODE | IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE };
+	
+	//拷贝头部
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
+	DWORD	dwSizeOfMove = GetSizeOfNtHeaders() + GetSizeOfSectionTable(pDosHeader);
+	DWORD	dwSizeOfDos = GetSizeOfDos();
+	
+	PIMAGE_NT_HEADERS pNewNtHeader = (PIMAGE_NT_HEADERS)((ULONG_PTR)pDosHeader + dwSizeOfDos);
+	memcpy((PVOID)(pNewNtHeader), pNtHeader, dwSizeOfMove);
+	PBYTE	pNewSection = (PBYTE)((ULONG_PTR)pNewNtHeader + dwSizeOfMove);
+
+	//拷贝新的节表
+	memcpy((PVOID)pNewSection, &MySectionHeader, dwSizeOfSectionHeader);
+
+	//节表末尾添加40字节的零
+	memset(pNewSection+ dwSizeOfSectionHeader, 0, dwSizeOfSectionHeader);
+
+	//修改PE头中节的数量NumberOfSections
+	//修改SizeOfImage的大小
+	//修改e_lfanew
+	SetNumberOfSections(pNewNtHeader, 1);
+	SetSizeOfImage(pNewNtHeader, dwSectionSize);
+	SetElfanew(pDosHeader, (LONG)dwSizeOfDos);
+
+	//修改其他东西
+	// do sth...
+	//
+
 	return TRUE;
 }
 
@@ -192,16 +216,23 @@ BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 		//判断有没有足够的0x50字节的00空间
 		if (JudgeSize(pDosHeader)) {
 			printf("[+]有足够的区块表成功\n");
-			AddOneSectionNormal(pDosHeader, dwSectionSize);
+			if (!AddOneSectionNormal(pDosHeader, dwSectionSize)) {
+				return FALSE;
+			}
 		}
 		else {
 			printf("[-]没有足够的区块表空间\n");
 			printf("[+]将PE头提前\n");
-			//AddSectionAdvanceNtHeader()
+			if (!AddSectionAdvanceNtHeader(pDosHeader, dwSectionSize)) {
+				return FALSE;
+			}
 		}
 
-		if (MyWriteFile(pFile, dwSectionSize, pCode, pFileName)) {
+		if (MyWriteFile(pDosHeader, dwSectionSize, pCode, pFileName)) {
 			printf("[+]文件写入成功\n");
+		}
+		else {
+			return FALSE;
 		}
 	}
 

@@ -10,8 +10,20 @@ PIMAGE_NT_HEADERS GetNtHeader(PIMAGE_DOS_HEADER pDosHeader);
 DWORD	GetSizeOfNtHeaders();
 
 //获取SectionTable大小
-DWORD GetSizeOfSectionTable(PIMAGE_NT_HEADERS pNtHeader);
+DWORD GetSizeOfSectionTable(PIMAGE_DOS_HEADER pDosHeader);
 
+//获取SectionHeader大小
+DWORD GetSizeOfSectionHeader();
+
+//获取DOS+DOS_Stub
+DWORD	GetSizeOfDosAndStub(PIMAGE_DOS_HEADER pDosHeader);
+
+//获取Dos头大小
+DWORD	GetSizeOfDos();
+
+
+//取模判断大小
+DWORD	GetStartAddress(DWORD	dwAlignment, DWORD	dwSize, DWORD	dwAddress);
 
 typedef struct  {
 	DWORD       SectionAlignment;
@@ -27,6 +39,8 @@ BOOL	JudgeSize(PIMAGE_DOS_HEADER	pDosHeader);
 VOID SetNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	AddSectionNum);
 //设置SizeOfImage
 VOID SetSizeOfImage(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize);
+//设置e_lfanew
+VOID SetElfanew(PIMAGE_DOS_HEADER pDosHeader, LONG dwElfanew);
 
-//取模判断大小
-DWORD	GetStartAddress(DWORD	dwAlignment, DWORD	dwSize, DWORD	dwAddress);
+//计算添加PointerToRawData和VirtualAddress
+BOOL	CalcSectionTableAddress(PIMAGE_DOS_HEADER pDosHeader, PDWORD dwStartVirtualAddress, PDWORD dwStartFileAddress);

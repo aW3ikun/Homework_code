@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "新增加一个节", "新�
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test_exe", "..\Test_exe\Test_exe.vcxproj", "{B82AE132-2716-4FA7-A643-FC8E615741C6}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "扩大一个节", "..\扩大一个节\扩大一个节.vcxproj", "{984D3836-5BB5-44E4-9D78-9F7A9E798592}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{B82AE132-2716-4FA7-A643-FC8E615741C6}.Release|x64.Build.0 = Release|x64
 		{B82AE132-2716-4FA7-A643-FC8E615741C6}.Release|x86.ActiveCfg = Release|Win32
 		{B82AE132-2716-4FA7-A643-FC8E615741C6}.Release|x86.Build.0 = Release|Win32
+		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Debug|x64.ActiveCfg = Debug|x64
+		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Debug|x64.Build.0 = Debug|x64
+		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Debug|x86.ActiveCfg = Debug|Win32
+		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Debug|x86.Build.0 = Debug|Win32
+		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Release|x64.ActiveCfg = Release|x64
+		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Release|x64.Build.0 = Release|x64
+		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Release|x86.ActiveCfg = Release|Win32
+		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
