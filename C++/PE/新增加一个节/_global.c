@@ -2,22 +2,26 @@
 #include"pe.h"
 
 //读取文件并顺便扩展大小到内存中
-PBYTE	MyReadFile(PCHAR pFileName) {
+PBYTE	MyReadFile(PCHAR pFileName, PDWORD pFileSize, DWORD dwSectionSize) {
 	HANDLE hFile = CreateFileA(pFileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-	//int error = GetLastError();
+	int error = GetLastError();
+	DWORD	SizeOfFile = 0;
 	PBYTE	lpFile = NULL;
 	PBYTE	lpFileEnd = NULL;
 	DWORD dwBytesToRead = 0;
 	DWORD dwBytesRead = 0;
 	if (hFile != INVALID_HANDLE_VALUE) {
 		//获取文件大小
-		if (LongFileSize = MyGetFileSize(hFile)) {
+		if (SizeOfFile = GetFileSize(hFile,NULL)) {
+			SizeOfFile = SizeOfFile + dwSectionSize;
+			//返回文件大小
+			*pFileSize = SizeOfFile;
 			//获取最终虚拟内存大小
-			dwBytesToRead = LongFileSize;
-			lpFile = VirtualAlloc(NULL, LongFileSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+			dwBytesToRead = SizeOfFile;
+			lpFile = VirtualAlloc(NULL, SizeOfFile, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 			if (lpFile != NULL) {
 				lpFileEnd = lpFile;
-				ZeroMemory(lpFile, LongFileSize);
+				ZeroMemory(lpFile, SizeOfFile);
 				//循环读文件，确保读出完整的文件
 				do {
 					if (!ReadFile(hFile, lpFileEnd, dwBytesToRead, &dwBytesRead, NULL)) {
@@ -46,8 +50,8 @@ PBYTE	MyReadFile(PCHAR pFileName) {
 }
 
 //文件写入,添加剩余数据
-BOOL	MyWriteFile(PBYTE pFileBuffer, DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
-	DWORD dwBytesToWrite = LongFileSize;
+BOOL	MyWriteFile(PBYTE pFileBuffer, DWORD FileSize, PCHAR pFileName) {
+	DWORD dwBytesToWrite = FileSize;
 	DWORD dwBytesWrite = 0;
 	BOOL bResult = FALSE;
 	//处理文件名
@@ -55,9 +59,7 @@ BOOL	MyWriteFile(PBYTE pFileBuffer, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 	HANDLE hFile = CreateFileA(NewFileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 
 	if (WriteFile(hFile, pFileBuffer, dwBytesToWrite, &dwBytesWrite, NULL)) {
-		if (WriteFile(hFile, pCode, dwSectionSize, &dwBytesWrite, NULL)) {
-			bResult = TRUE;
-		}
+		bResult = TRUE;
 	}
 
 	if (NewFileName != NULL) {
@@ -68,6 +70,12 @@ BOOL	MyWriteFile(PBYTE pFileBuffer, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 		printf("[-]文件写入失败\n");
 	}
 	return bResult;
+}
+
+//拷贝数据
+VOID	MyCopyBuffer(PBYTE	pFileBuffer, DWORD	dwSectionSize, DWORD dwFileSize, PBYTE pCode) {
+	PBYTE pBufferStart = (PBYTE)((ULONG_PTR)pFileBuffer - dwSectionSize + dwFileSize);
+	memcpy(pBufferStart, pCode, dwSectionSize);
 }
 
 /*
@@ -87,23 +95,23 @@ PointToRawData 等于上一个  PointToRawData + SizeOfRawData 符合文件对齐
 SizeOfRawData = VirtualSize
 */
 
-//获取文件大小
-ULONG_PTR MyGetFileSize(HANDLE hFile) {
-	LARGE_INTEGER  piFileSize = { 0 };
-	LONGLONG FileSize = 0;
-	if (GetFileSizeEx(hFile, &piFileSize)) {
-		//获取最终虚拟内存大小
-		FileSize = piFileSize.QuadPart;
-		return FileSize;
-	}
-	return 0;
-}
+////获取文件大小
+//ULONG_PTR MyGetFileSize(HANDLE hFile) {
+//	LARGE_INTEGER  piFileSize = { 0 };
+//	LONGLONG FileSize = 0;
+//	if (GetFileSizeEx(hFile, &piFileSize)) {
+//		//获取最终虚拟内存大小
+//		FileSize = piFileSize.QuadPart;
+//		return FileSize;
+//	}
+//	return 0;
+//}
 
 //处理文件名
 PCHAR AddFileName(PCHAR pFileName) {
 	CHAR FileName[100] = { 0 };
 	CHAR* NewFileName = malloc(100);
-	if (NewFileName==NULL) {
+	if (NewFileName == NULL) {
 		return NULL;
 	}
 	memset(NewFileName, 0, 100);
@@ -129,7 +137,7 @@ BOOL AddOneSectionNormal(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 	DWORD	dwStartFileAddress = 0;
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
 
-	if (!CalcSectionTableAddress(pDosHeader ,&dwStartVirtualAddress, &dwStartFileAddress)) {
+	if (!CalcSectionTableAddress(pDosHeader, &dwStartVirtualAddress, &dwStartFileAddress)) {
 		return FALSE;
 	}
 	//初始化
@@ -145,7 +153,7 @@ BOOL AddOneSectionNormal(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 	//修改PE头中节的数量NumberOfSections
 	//修改SizeOfImage的大小
 	SetNumberOfSections(pNtHeader, 1);
-	SetSizeOfImage(pNtHeader, dwSectionSize);
+	AddSizeOfImage(pNtHeader, dwSectionSize);
 
 	//修改其他东西
 	// do sth...
@@ -173,12 +181,12 @@ BOOL	AddSectionAdvanceNtHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize
 		dwStartVirtualAddress,dwSectionSize,
 		dwStartFileAddress,0,0,0,0,
 		IMAGE_SCN_CNT_CODE | IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE };
-	
+
 	//拷贝头部
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
 	DWORD	dwSizeOfMove = GetSizeOfNtHeaders() + GetSizeOfSectionTable(pDosHeader);
 	DWORD	dwSizeOfDos = GetSizeOfDos();
-	
+
 	PIMAGE_NT_HEADERS pNewNtHeader = (PIMAGE_NT_HEADERS)((ULONG_PTR)pDosHeader + dwSizeOfDos);
 	memcpy((PVOID)(pNewNtHeader), pNtHeader, dwSizeOfMove);
 	PBYTE	pNewSection = (PBYTE)((ULONG_PTR)pNewNtHeader + dwSizeOfMove);
@@ -187,14 +195,14 @@ BOOL	AddSectionAdvanceNtHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize
 	memcpy((PVOID)pNewSection, &MySectionHeader, dwSizeOfSectionHeader);
 
 	//节表末尾添加40字节的零
-	memset(pNewSection+ dwSizeOfSectionHeader, 0, dwSizeOfSectionHeader);
+	memset(pNewSection + dwSizeOfSectionHeader, 0, dwSizeOfSectionHeader);
 
 	//修改PE头中节的数量NumberOfSections
 	//修改SizeOfImage的大小
 	//修改e_lfanew
 	SetNumberOfSections(pNewNtHeader, 1);
-	SetSizeOfImage(pNewNtHeader, dwSectionSize);
 	SetElfanew(pDosHeader, (LONG)dwSizeOfDos);
+	AddSizeOfImage(pDosHeader, dwSectionSize);
 
 	//修改其他东西
 	// do sth...
@@ -208,10 +216,15 @@ BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 	BOOL bResult = FALSE;
 
 	//文件映射到
-	PBYTE pFile = MyReadFile(pFileName);
+	DWORD dwFileSize = 0;
+	PBYTE pFile = MyReadFile(pFileName, &dwFileSize, dwSectionSize);
 	if (pFile != NULL) {
 		printf("[+]文件读取成功\n");
 		pDosHeader = (PIMAGE_DOS_HEADER)pFile;
+
+		if (!IsPE(pDosHeader)) {
+			return FALSE;
+		}
 
 		//判断有没有足够的0x50字节的00空间
 		if (JudgeSize(pDosHeader)) {
@@ -228,7 +241,9 @@ BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 			}
 		}
 
-		if (MyWriteFile(pDosHeader, dwSectionSize, pCode, pFileName)) {
+		MyCopyBuffer(pFile, dwSectionSize, dwFileSize, pCode);
+
+		if (MyWriteFile(pDosHeader, dwFileSize, pFileName)) {
 			printf("[+]文件写入成功\n");
 		}
 		else {
@@ -243,4 +258,67 @@ BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 
 
 	return TRUE;
+}
+
+/*
+扩大最后一个节
+1 . 修改 最后一个节的 SizeOfRawData和VirtualSize改成N
+N = (SizeOfRawData >= VirtualSize ? SizeOfRawData : VirtualSize) + Ex
+SizeOfRawData = VirtualSize = N
+2. SizeOfImage = SizeOfImage + Ex
+*/
+
+//扩大一个节 最后一个节
+BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
+	PIMAGE_DOS_HEADER pDosHeader = NULL;
+	BOOL bResult = FALSE;
+	DWORD dwFileSize = 0;
+	//文件映射到
+	PBYTE pFile = MyReadFile(pFileName, &dwFileSize, dwSectionSize);
+
+	do {
+		if (pFile != NULL) {
+			printf("[+]文件读取成功\n");
+			pDosHeader = (PIMAGE_DOS_HEADER)pFile;
+
+			if (!IsPE(pDosHeader)) {
+				bResult = FALSE;
+				break;
+
+			}
+
+			//获取最后一个节表，修改属性
+			DWORD dwNumberOfSection = GetNumberOfSection(pDosHeader);
+			PIMAGE_SECTION_HEADER pLastSectionHeader = GetXXSectionHeader(pDosHeader, dwNumberOfSection);
+			//添加节表属性
+			AddSectionAttribute(pLastSectionHeader, IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE);
+			//符合扩大一个节的习惯，修改最后一个节表的SizeOfRawData 和 VirtualSize
+			SetLastSectionRawDataAndVirtualSize(pLastSectionHeader, dwSectionSize);
+			if (!AddSizeOfImage(pDosHeader, dwSectionSize)) {
+				bResult =  FALSE;
+				break;
+
+			}
+
+			MyCopyBuffer(pFile, dwSectionSize, dwFileSize, pCode);
+
+			if (MyWriteFile(pDosHeader, dwFileSize, pFileName)) {
+				printf("[+]文件写入成功\n");
+				bResult = TRUE;
+			}
+			else {
+				bResult =  FALSE;
+				break;
+			}
+		}
+		else {
+			return FALSE;
+		}
+	} while (0);
+
+	if (pFile != NULL) {
+		VirtualFree(pFile, 0, MEM_RELEASE);
+	}
+
+	return bResult;
 }

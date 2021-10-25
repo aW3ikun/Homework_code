@@ -2,6 +2,21 @@
 
 PBYTE pZero = NULL;
 
+
+//判断PE文件
+BOOL	IsPE(PIMAGE_DOS_HEADER pDosHeader) {
+	BOOL bResult = FALSE;
+	if (pDosHeader->e_magic == IMAGE_DOS_SIGNATURE && GetNtHeader(pDosHeader)->Signature == IMAGE_NT_SIGNATURE) {
+		bResult = TRUE;
+	}
+
+	if (!bResult) {
+		printf("[-]不是PE\n");
+	}
+	return bResult;
+}
+
+
 //获取NtHeader
 PIMAGE_NT_HEADERS GetNtHeader(PIMAGE_DOS_HEADER pDosHeader) {
 	DWORD	dwSizeOfDos = pDosHeader->e_lfanew;
@@ -56,18 +71,40 @@ BOOL	JudgeSize(PIMAGE_DOS_HEADER	pDosHeader) {
 }
 
 //设置NumberOfSections
-VOID SetNumberOfSections(PIMAGE_NT_HEADERS pNtHeader,WORD	AddSectionNum) {
+VOID SetNumberOfSections(PIMAGE_NT_HEADERS pNtHeader, WORD	AddSectionNum) {
 	pNtHeader->FileHeader.NumberOfSections += AddSectionNum;
 }
 //设置SizeOfImage
-VOID SetSizeOfImage(PIMAGE_NT_HEADERS pNtHeader,DWORD dwSectionSize) {
+BOOL AddSizeOfImage(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
+	if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
+		printf("[-]不是Dos头\n");
+		return FALSE;
+	}
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
+	if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
+		printf("[-]不是Dos头\n");
+		return FALSE;
+	}
 	pNtHeader->OptionalHeader.SizeOfImage += dwSectionSize;
+	return TRUE;
 }
 //设置e_lfanew
 VOID SetElfanew(PIMAGE_DOS_HEADER pDosHeader, LONG dwElfanew) {
 	pDosHeader->e_lfanew = dwElfanew;
 }
+//扩大一个节的习惯，修改最后一个节表的SizeOfRawData 和 VirtualSize
+VOID SetLastSectionRawDataAndVirtualSize(PIMAGE_SECTION_HEADER pLastSectionHeader, DWORD dwSectionSize) {
+	DWORD	dwMax = (pLastSectionHeader->SizeOfRawData >= pLastSectionHeader->Misc.VirtualSize ? pLastSectionHeader->SizeOfRawData : pLastSectionHeader->Misc.VirtualSize) + dwSectionSize;
+	pLastSectionHeader->SizeOfRawData = pLastSectionHeader->Misc.VirtualSize = dwMax;
+}
 
+//重新定义节属性
+VOID AddSectionAttribute(PIMAGE_SECTION_HEADER pLastSectionHeader, INT Add) {
+	if (Add != NULL) {
+		pLastSectionHeader->Characteristics |= Add;
+	}
+
+}
 //取模判断大小
 DWORD	GetStartAddress(DWORD	dwAlignment, DWORD	dwSize, DWORD	dwAddress) {
 	DWORD dwZero = dwSize % dwAlignment;
@@ -91,6 +128,19 @@ DWORD	GetSizeOfDos() {
 DWORD GetSizeOfSectionHeader() {
 	return sizeof(IMAGE_SECTION_HEADER);
 }
+
+//获取节表数
+DWORD	GetNumberOfSection(PIMAGE_DOS_HEADER	pDosHeader) {
+	return GetNtHeader(pDosHeader)->FileHeader.NumberOfSections;
+}
+
+//获取第几个节表
+PIMAGE_SECTION_HEADER	GetXXSectionHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial) {
+	PIMAGE_NT_HEADERS	pNtHeader = GetNtHeader(pDosHeader);
+	PIMAGE_SECTION_HEADER pFirstSectionHeader = IMAGE_FIRST_SECTION(pNtHeader);
+	return (PIMAGE_SECTION_HEADER)((ULONG_PTR)pFirstSectionHeader + (dwSerial - 1) * sizeof(IMAGE_SECTION_HEADER));
+}
+
 //计算添加PointerToRawData和VirtualAddress
 BOOL	CalcSectionTableAddress(PIMAGE_DOS_HEADER pDosHeader, PDWORD pdwStartVirtualAddress, PDWORD pdwStartFileAddress) {
 	PIMAGE_SECTION_HEADER pLastSectionHeader = NULL;
@@ -105,8 +155,8 @@ BOOL	CalcSectionTableAddress(PIMAGE_DOS_HEADER pDosHeader, PDWORD pdwStartVirtua
 		return FALSE;
 	}
 	//计算该填充的值
-	 *pdwStartVirtualAddress = GetStartAddress(pPeAlignment.SectionAlignment, pLastSectionHeader->Misc.VirtualSize, pLastSectionHeader->VirtualAddress);
-	 *pdwStartFileAddress = GetStartAddress(pPeAlignment.FileAlignment, pLastSectionHeader->SizeOfRawData, pLastSectionHeader->PointerToRawData);
+	*pdwStartVirtualAddress = GetStartAddress(pPeAlignment.SectionAlignment, pLastSectionHeader->Misc.VirtualSize, pLastSectionHeader->VirtualAddress);
+	*pdwStartFileAddress = GetStartAddress(pPeAlignment.FileAlignment, pLastSectionHeader->SizeOfRawData, pLastSectionHeader->PointerToRawData);
 
-	 return TRUE;
+	return TRUE;
 }

@@ -18,5 +18,19 @@
     <ClCompile Include="main.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\新增加一个节\_global.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\新增加一个节\pe.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\新增加一个节\_global.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\新增加一个节\pe.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

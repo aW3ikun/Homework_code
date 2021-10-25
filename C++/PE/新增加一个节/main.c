@@ -20,7 +20,7 @@ int main() {
 	if (pCode == NULL) {
 		return NULL;
 	}
-	memset(pCode, 0, dwSectionSize);
+	memset(pCode, 'A', dwSectionSize);
 	//编译成多少位版本，就适合加载多少位
 	bResult = AddSection(pSectionName, dwSectionSize, pCode, pFileName);
 	if (pCode != NULL) {
