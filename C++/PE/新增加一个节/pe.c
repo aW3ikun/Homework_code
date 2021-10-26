@@ -71,9 +71,16 @@ BOOL	JudgeSize(PIMAGE_DOS_HEADER	pDosHeader) {
 }
 
 //设置NumberOfSections
-VOID SetNumberOfSections(PIMAGE_NT_HEADERS pNtHeader, WORD	AddSectionNum) {
+VOID AddNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	AddSectionNum) {
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
 	pNtHeader->FileHeader.NumberOfSections += AddSectionNum;
 }
+//设置NumberOfSections
+VOID SetNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	SectionNum) {
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
+	pNtHeader->FileHeader.NumberOfSections= SectionNum;
+}
+
 //设置SizeOfImage
 BOOL AddSizeOfImage(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 	if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
@@ -88,6 +95,20 @@ BOOL AddSizeOfImage(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 	pNtHeader->OptionalHeader.SizeOfImage += dwSectionSize;
 	return TRUE;
 }
+//设置SizeOfImage
+BOOL SetSizeOfImage(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSize) {
+	if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
+		printf("[-]不是Dos头\n");
+		return FALSE;
+	}
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
+	if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
+		printf("[-]不是Dos头\n");
+		return FALSE;
+	}
+	pNtHeader->OptionalHeader.SizeOfImage = dwSize;
+	return TRUE;
+}
 //设置e_lfanew
 VOID SetElfanew(PIMAGE_DOS_HEADER pDosHeader, LONG dwElfanew) {
 	pDosHeader->e_lfanew = dwElfanew;
@@ -98,6 +119,16 @@ VOID SetLastSectionRawDataAndVirtualSize(PIMAGE_SECTION_HEADER pLastSectionHeade
 	pLastSectionHeader->SizeOfRawData = pLastSectionHeader->Misc.VirtualSize = dwMax;
 }
 
+//设置第几个SizeOfRawData和VirtualSize
+VOID SetSizeOfRawDataAndVirtualSize(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial, DWORD dwSize) {
+	PIMAGE_SECTION_HEADER pSectionHeader = GetXXSectionHeader(pDosHeader, dwSerial);
+	pSectionHeader->Misc.VirtualSize = pSectionHeader->SizeOfRawData = dwSize;
+}
+//设置第几个节的属性
+VOID SetSectionCharacteristics(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial, INT Characteristics) {
+	PIMAGE_SECTION_HEADER pSectionHeader = GetXXSectionHeader(pDosHeader, dwSerial);
+	pSectionHeader->Characteristics = Characteristics;
+}
 //重新定义节属性
 VOID AddSectionAttribute(PIMAGE_SECTION_HEADER pLastSectionHeader, INT Add) {
 	if (Add != NULL) {
@@ -105,6 +136,8 @@ VOID AddSectionAttribute(PIMAGE_SECTION_HEADER pLastSectionHeader, INT Add) {
 	}
 
 }
+
+
 //取模判断大小
 DWORD	GetStartAddress(DWORD	dwAlignment, DWORD	dwSize, DWORD	dwAddress) {
 	DWORD dwZero = dwSize % dwAlignment;
@@ -113,6 +146,16 @@ DWORD	GetStartAddress(DWORD	dwAlignment, DWORD	dwSize, DWORD	dwAddress) {
 		return dwAddress + (dwDiv + 1) * dwAlignment;
 	}
 	return dwSize + dwAddress;
+}
+
+//获取对齐大小
+DWORD GetAlign(DWORD	dwAlignment, DWORD	dwSize) {
+	DWORD dwZero = dwSize % dwAlignment;
+	DWORD dwDiv = dwSize / dwAlignment;
+	if (dwZero != 0) {
+		return   (dwDiv + 1) * dwAlignment;
+	}
+	return dwSize;
 }
 
 //获取DOS+DOS_Stub
@@ -134,11 +177,29 @@ DWORD	GetNumberOfSection(PIMAGE_DOS_HEADER	pDosHeader) {
 	return GetNtHeader(pDosHeader)->FileHeader.NumberOfSections;
 }
 
-//获取第几个节表
+//获取第几个节表 
 PIMAGE_SECTION_HEADER	GetXXSectionHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial) {
 	PIMAGE_NT_HEADERS	pNtHeader = GetNtHeader(pDosHeader);
 	PIMAGE_SECTION_HEADER pFirstSectionHeader = IMAGE_FIRST_SECTION(pNtHeader);
 	return (PIMAGE_SECTION_HEADER)((ULONG_PTR)pFirstSectionHeader + (dwSerial - 1) * sizeof(IMAGE_SECTION_HEADER));
+}
+
+//获取节表属性
+INT GetSectionCharacteristics(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial) {
+	PIMAGE_SECTION_HEADER	pSectionHeader = GetXXSectionHeader(pDosHeader, dwSerial);
+	return pSectionHeader->Characteristics;
+}
+
+//获取合并的后的区段大小
+DWORD	GetAllSizeOfSection(PIMAGE_DOS_HEADER pDosHeader) {
+	//获取最后一个节表的指针
+	PIMAGE_SECTION_HEADER pLastSectionHeader = GetXXSectionHeader(pDosHeader, GetNumberOfSection(pDosHeader));
+	PIMAGE_NT_HEADERS	pNtHeader = GetNtHeader(pDosHeader);
+	PEALIGNMENT PeAlignment = { 0 };
+	GetAlignment(pDosHeader, &PeAlignment);
+
+	DWORD dwMax = pLastSectionHeader->SizeOfRawData > pLastSectionHeader->Misc.VirtualSize ? pLastSectionHeader->SizeOfRawData : pLastSectionHeader->Misc.VirtualSize;
+	return pLastSectionHeader->VirtualAddress + dwMax - GetAlign(PeAlignment.SectionAlignment,pNtHeader->OptionalHeader.SizeOfHeaders );
 }
 
 //计算添加PointerToRawData和VirtualAddress
@@ -159,4 +220,68 @@ BOOL	CalcSectionTableAddress(PIMAGE_DOS_HEADER pDosHeader, PDWORD pdwStartVirtua
 	*pdwStartFileAddress = GetStartAddress(pPeAlignment.FileAlignment, pLastSectionHeader->SizeOfRawData, pLastSectionHeader->PointerToRawData);
 
 	return TRUE;
+}
+
+
+//扩展内存
+PBYTE	StretchFileToMemory(PIMAGE_DOS_HEADER pDosHeader,PDWORD pFileSize) {
+	//传入的是 硬盘中文件的映射
+	PBYTE	pMemory = NULL;
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
+	DWORD	dwSizeOfImage = *pFileSize = pNtHeader->OptionalHeader.SizeOfImage;
+	DWORD	dwNumberOfSection = GetNumberOfSection(pDosHeader);
+
+	pMemory = VirtualAlloc(NULL, dwSizeOfImage, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	ZeroMemory(pMemory, dwSizeOfImage);
+
+	if (pMemory == NULL) {
+		DEBUG_INFO("[-]申请空间失败\n");
+		return NULL;
+	}
+
+	//拷贝整个PE头
+	CopyHeader(pMemory, pDosHeader);
+	//拷贝区块
+	if (!CopyAllSection(pMemory, pDosHeader, dwSizeOfImage)) {
+		VirtualFree(pMemory, 0, MEM_RELEASE);
+		return NULL;
+	}
+
+	return pMemory;
+
+}
+
+//拷贝整个PE头
+VOID CopyHeader(LPVOID	pDst, PIMAGE_DOS_HEADER	pDosHeader) {
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
+	DWORD	dwSizeOfHeader = pNtHeader->OptionalHeader.SizeOfHeaders;
+	CopyMemory(pDst, pDosHeader, dwSizeOfHeader);
+}
+
+//拷贝区块
+BOOL CopyAllSection(LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile,DWORD dwSizeOfImage) {
+
+	//获取SectionTable
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pFile);
+	PIMAGE_SECTION_HEADER pSection = IMAGE_FIRST_SECTION(pNtHeader);
+	PIMAGE_SECTION_HEADER pFirstSection = pSection;
+	DWORD dwNumberOfSection = GetNumberOfSection(pFile);
+
+	for (int i = 0; i < dwNumberOfSection; i++) {
+		ULONG_PTR dwVirtualAddress = pSection->VirtualAddress;
+		ULONG_PTR dwSizeOfRawData = pSection->SizeOfRawData;
+		ULONG_PTR dwPointerToRawData = pSection->PointerToRawData;
+
+		LPVOID lpRawOfData = (LPVOID)((ULONG_PTR)pFile + dwPointerToRawData);
+		LPVOID lpMemory = (LPVOID)((ULONG_PTR)pMemory + dwVirtualAddress - pFirstSection->VirtualAddress + pFirstSection->PointerToRawData);
+
+		if (((ULONG_PTR)lpMemory + dwSizeOfRawData) > ((ULONG_PTR)pMemory + dwSizeOfImage)) {
+			DEBUG_INFO("[-]超越边界\n");
+			return FALSE;
+		}
+		CopyMemory(lpMemory, lpRawOfData, dwSizeOfRawData);
+		pSection++;
+	}
+
+
 }

@@ -29,6 +29,9 @@ BOOL	AddSectionAdvanceNtHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize
 //扩大一个节 最后一个节
 BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName);
 
+//合并成一个节
+BOOL	MergeOneSection(PCHAR pFileName);
+
 //文件操作
 //读文件
 PBYTE	MyReadFile(PCHAR pFileName, PDWORD pFileSize,DWORD dwSectionSize);

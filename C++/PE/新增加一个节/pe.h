@@ -2,7 +2,7 @@
 #include"_global.h"
 
 //指向SectionTable的末尾
-extern  PBYTE pZero ;
+extern  PBYTE pZero;
 
 
 //判断PE文件
@@ -29,10 +29,13 @@ DWORD	GetSizeOfDos();
 //取模判断大小
 DWORD	GetStartAddress(DWORD	dwAlignment, DWORD	dwSize, DWORD	dwAddress);
 
-typedef struct  {
+//获取对齐大小
+DWORD GetAlign(DWORD	dwAlignment, DWORD	dwSize);
+
+typedef struct {
 	DWORD       SectionAlignment;
 	DWORD       FileAlignment;
-}PEALIGNMENT,*PPEALIGNMENT;
+}PEALIGNMENT, * PPEALIGNMENT;
 //获取内存对齐和文件对齐
 VOID GetAlignment(PIMAGE_DOS_HEADER	pDosHeader, PPEALIGNMENT pPeAlignment);
 
@@ -41,18 +44,29 @@ DWORD	GetNumberOfSection(PIMAGE_DOS_HEADER	pDosHeader);
 
 //获取第几个节表
 PIMAGE_SECTION_HEADER	GetXXSectionHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial);
+//获取节表属性
+INT GetSectionCharacteristics(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial);
+
+//获取合并的后的区段大小
+DWORD	GetAllSizeOfSection(PIMAGE_DOS_HEADER pDosHeader);
 
 //判断节区空间是否空余空间 >=0x50
 BOOL	JudgeSize(PIMAGE_DOS_HEADER	pDosHeader);
 
+//增加NumberOfSections
+VOID AddNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	AddSectionNum);
 //设置NumberOfSections
-VOID SetNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	AddSectionNum);
+VOID SetNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	SectionNum);
 //设置SizeOfImage
-BOOL SetSizeOfImage(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize);
+BOOL SetSizeOfImage(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSize);
 //设置e_lfanew
 VOID SetElfanew(PIMAGE_DOS_HEADER pDosHeader, LONG dwElfanew);
 //扩大一个节的习惯，修改最后一个节表的SizeOfRawData 和 VirtualSize
 VOID SetLastSectionRawDataAndVirtualSize(PIMAGE_SECTION_HEADER pLastSectionHeader, DWORD dwSectionSize);
+//设置SizeOfRawData和VirtualSize
+VOID SetSizeOfRawDataAndVirtualSize(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial, DWORD dwSize);
+//设置第几个节的属性
+VOID SetSectionCharacteristics(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial, INT Characteristics);
 
 //定义节属性
 VOID AddSectionAttribute(PIMAGE_SECTION_HEADER pLastSectionHeader, INT Add);
@@ -61,25 +75,10 @@ VOID AddSectionAttribute(PIMAGE_SECTION_HEADER pLastSectionHeader, INT Add);
 BOOL	CalcSectionTableAddress(PIMAGE_DOS_HEADER pDosHeader, PDWORD dwStartVirtualAddress, PDWORD dwStartFileAddress);
 
 //扩展内存
-PBYTE	StretchFile(PIMAGE_DOS_HEADER pDosHeader) {
-	//传入的是 硬盘中文件的映射
-	PBYTE	pFile = NULL;
-	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
-	DWORD	dwSizeOfImage = pNtHeader->OptionalHeader.SizeOfImage;
-	DWORD	dwNumberOfSection = GetNumberOfSection(pDosHeader);
+PBYTE	StretchFileToMemory(PIMAGE_DOS_HEADER pDosHeader,PDWORD pFileSize);
 
-	pFile = VirtualAlloc(NULL, dwSizeOfImage, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-	
-	if (pFile != NULL) {
-		DEBUG_INFO("[-]申请空间失败\n");
-		return NULL;
-	}
+//拷贝整个PE头
+VOID CopyHeader(LPVOID	pDst, PIMAGE_DOS_HEADER	pDosHeader);
 
-	//拷贝整个PE头
-	Copy
-
-	//拷贝区块
-
-	return pFile;
-	
-}
+//拷贝区块
+BOOL CopyAllSection(LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile,DWORD dwSizeOfImage);

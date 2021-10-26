@@ -152,7 +152,7 @@ BOOL AddOneSectionNormal(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 
 	//修改PE头中节的数量NumberOfSections
 	//修改SizeOfImage的大小
-	SetNumberOfSections(pNtHeader, 1);
+	AddNumberOfSections(pNtHeader, 1);
 	AddSizeOfImage(pNtHeader, dwSectionSize);
 
 	//修改其他东西
@@ -200,8 +200,8 @@ BOOL	AddSectionAdvanceNtHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize
 	//修改PE头中节的数量NumberOfSections
 	//修改SizeOfImage的大小
 	//修改e_lfanew
-	SetNumberOfSections(pNewNtHeader, 1);
 	SetElfanew(pDosHeader, (LONG)dwSizeOfDos);
+	AddNumberOfSections(pDosHeader, 1);
 	AddSizeOfImage(pDosHeader, dwSectionSize);
 
 	//修改其他东西
@@ -242,6 +242,8 @@ BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 		}
 
 		MyCopyBuffer(pFile, dwSectionSize, dwFileSize, pCode);
+
+		//do sth....
 
 		if (MyWriteFile(pDosHeader, dwFileSize, pFileName)) {
 			printf("[+]文件写入成功\n");
@@ -320,5 +322,71 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 		VirtualFree(pFile, 0, MEM_RELEASE);
 	}
 
+	return bResult;
+}
+
+
+//合并成一个节
+BOOL	MergeOneSection(PCHAR pFileName,DWORD dwSectionSize) {
+	PIMAGE_DOS_HEADER pDosHeader = NULL;
+	BOOL bResult = FALSE;
+	DWORD dwFileSize = 0;
+	//文件映射到
+	PBYTE pFile = MyReadFile(pFileName, &dwFileSize, dwSectionSize);
+
+	PBYTE pMemory = NULL;
+	do {
+		if (pFile != NULL) {
+			printf("[+]文件读取成功\n");
+			pDosHeader = (PIMAGE_DOS_HEADER)pFile;
+
+			if (!IsPE(pDosHeader)) {
+				bResult = FALSE;
+				break;
+			}
+
+			pMemory = StretchFileToMemory(pDosHeader,&dwFileSize);
+			if (pMemory == NULL) {
+				DEBUG_INFO("[-]文件拉伸到内存失败");
+				bResult = FALSE;
+				break;
+			}
+
+			//计算所有区段大小
+			DWORD dwSize = GetAllSizeOfSection(pMemory);
+			SetSizeOfRawDataAndVirtualSize(pMemory, 1, dwSize);
+
+			//修改节属性
+			//获取节的属性
+			INT Characteristics = 0;
+			for (int i = 1; i <= GetNumberOfSection(pMemory); i++) {
+				Characteristics |= GetSectionCharacteristics(pMemory, i);
+			}
+			SetSectionCharacteristics(pMemory, 1, Characteristics);
+
+			//修改NumberOfSections
+			SetNumberOfSections(pMemory, 1);
+
+			if (MyWriteFile(pMemory, dwFileSize, pFileName)) {
+				printf("[+]文件写入成功\n");
+				bResult = TRUE;
+			}
+			else {
+				bResult = FALSE;
+				break;
+			}
+		}
+		else {
+			bResult = FALSE;
+			break;
+		}
+	} while (0);
+
+	if (pMemory != NULL) {
+		VirtualFree(pMemory, 0, MEM_RELEASE);
+	}
+	if (pFile != NULL) {
+		VirtualFree(pFile, 0, MEM_RELEASE);
+	}
 	return bResult;
 }

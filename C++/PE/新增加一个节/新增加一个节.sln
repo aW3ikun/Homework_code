@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test_exe", "..\Test_exe\Tes
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "扩大一个节", "..\扩大一个节\扩大一个节.vcxproj", "{984D3836-5BB5-44E4-9D78-9F7A9E798592}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "合并成一个节", "..\合并成一个节\合并成一个节.vcxproj", "{CAD99333-4360-4008-B2C5-EB1FE6F193D8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -41,6 +43,14 @@ Global
 		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Release|x64.Build.0 = Release|x64
 		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Release|x86.ActiveCfg = Release|Win32
 		{984D3836-5BB5-44E4-9D78-9F7A9E798592}.Release|x86.Build.0 = Release|Win32
+		{CAD99333-4360-4008-B2C5-EB1FE6F193D8}.Debug|x64.ActiveCfg = Debug|x64
+		{CAD99333-4360-4008-B2C5-EB1FE6F193D8}.Debug|x64.Build.0 = Debug|x64
+		{CAD99333-4360-4008-B2C5-EB1FE6F193D8}.Debug|x86.ActiveCfg = Debug|Win32
+		{CAD99333-4360-4008-B2C5-EB1FE6F193D8}.Debug|x86.Build.0 = Debug|Win32
+		{CAD99333-4360-4008-B2C5-EB1FE6F193D8}.Release|x64.ActiveCfg = Release|x64
+		{CAD99333-4360-4008-B2C5-EB1FE6F193D8}.Release|x64.Build.0 = Release|x64
+		{CAD99333-4360-4008-B2C5-EB1FE6F193D8}.Release|x86.ActiveCfg = Release|Win32
+		{CAD99333-4360-4008-B2C5-EB1FE6F193D8}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

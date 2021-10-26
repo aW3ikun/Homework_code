@@ -14,8 +14,6 @@ int main() {
 	//PCHAR	pFileName = ".\\Test_exe.exe";
 	
 
-
-
 	pCode = (PBYTE)malloc(dwSectionSize);
 	if (pCode == NULL) {
 		return NULL;
