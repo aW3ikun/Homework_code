@@ -16,6 +16,8 @@
 
 
 extern LONGLONG LongFileSize;
+//检查PE和版本
+BOOL check(PIMAGE_DOS_HEADER pDosHeader);
 
 //主要接口调用
 BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName);

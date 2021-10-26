@@ -1,6 +1,11 @@
 #include"_global.h"
 #include"pe.h"
 
+//检查PE和版本
+BOOL check(PIMAGE_DOS_HEADER pDosHeader){
+	return (IsPE(pDosHeader) && IsCurrentBit(pDosHeader));
+}
+
 //读取文件并顺便扩展大小到内存中
 PBYTE	MyReadFile(PCHAR pFileName, PDWORD pFileSize, DWORD dwSectionSize) {
 	HANDLE hFile = CreateFileA(pFileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
@@ -12,7 +17,7 @@ PBYTE	MyReadFile(PCHAR pFileName, PDWORD pFileSize, DWORD dwSectionSize) {
 	DWORD dwBytesRead = 0;
 	if (hFile != INVALID_HANDLE_VALUE) {
 		//获取文件大小
-		if (SizeOfFile = GetFileSize(hFile,NULL)) {
+		if (SizeOfFile = GetFileSize(hFile, NULL)) {
 			SizeOfFile = SizeOfFile + dwSectionSize;
 			//返回文件大小
 			*pFileSize = SizeOfFile;
@@ -222,7 +227,7 @@ BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 		printf("[+]文件读取成功\n");
 		pDosHeader = (PIMAGE_DOS_HEADER)pFile;
 
-		if (!IsPE(pDosHeader)) {
+		if (!check(pDosHeader)) {
 			return FALSE;
 		}
 
@@ -283,7 +288,7 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 			printf("[+]文件读取成功\n");
 			pDosHeader = (PIMAGE_DOS_HEADER)pFile;
 
-			if (!IsPE(pDosHeader)) {
+			if (!check(pDosHeader)) {
 				bResult = FALSE;
 				break;
 
@@ -297,7 +302,7 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 			//符合扩大一个节的习惯，修改最后一个节表的SizeOfRawData 和 VirtualSize
 			SetLastSectionRawDataAndVirtualSize(pLastSectionHeader, dwSectionSize);
 			if (!AddSizeOfImage(pDosHeader, dwSectionSize)) {
-				bResult =  FALSE;
+				bResult = FALSE;
 				break;
 
 			}
@@ -309,7 +314,7 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 				bResult = TRUE;
 			}
 			else {
-				bResult =  FALSE;
+				bResult = FALSE;
 				break;
 			}
 		}
@@ -327,7 +332,7 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 
 
 //合并成一个节
-BOOL	MergeOneSection(PCHAR pFileName,DWORD dwSectionSize) {
+BOOL	MergeOneSection(PCHAR pFileName, DWORD dwSectionSize) {
 	PIMAGE_DOS_HEADER pDosHeader = NULL;
 	BOOL bResult = FALSE;
 	DWORD dwFileSize = 0;
@@ -340,12 +345,12 @@ BOOL	MergeOneSection(PCHAR pFileName,DWORD dwSectionSize) {
 			printf("[+]文件读取成功\n");
 			pDosHeader = (PIMAGE_DOS_HEADER)pFile;
 
-			if (!IsPE(pDosHeader)) {
+			if (!check(pDosHeader)) {
 				bResult = FALSE;
 				break;
 			}
 
-			pMemory = StretchFileToMemory(pDosHeader,&dwFileSize);
+			pMemory = StretchFileToMemory(pDosHeader, &dwFileSize);
 			if (pMemory == NULL) {
 				DEBUG_INFO("[-]文件拉伸到内存失败");
 				bResult = FALSE;

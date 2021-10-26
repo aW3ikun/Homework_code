@@ -5,8 +5,10 @@ int main() {
 	BOOL bResult = FALSE;
 
 
-	PCHAR	pFileName = ".\\64-NOTEPAD.EXE";
-	//PCHAR	pFileName = ".\\Test_exe.exe";
+	//PCHAR	pFileName = ".\\64-NOTEPAD.EXE";
+	//PCHAR	pFileName = "C:\\Users\\awei_\\Downloads\\EverEdit\\EverEdit.exe";
+	//PCHAR	pFileName = "D:\\repos\\Homework_code\\C++\\PE\\新增加一个节\\x64\\\Release\\Test_exe.exe";
+	PCHAR pFileName = "D:\\repos\\Homework_code\\C++\\PE\\新增加一个节\\Release\\Test_exe.exe";
 
 
 	//编译成多少位版本，就适合加载多少位

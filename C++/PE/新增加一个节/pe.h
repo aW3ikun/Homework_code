@@ -8,6 +8,9 @@ extern  PBYTE pZero;
 //判断PE文件
 BOOL	IsPE(PIMAGE_DOS_HEADER pDosHeader);
 
+//当前位数判断
+BOOL	IsCurrentBit(PIMAGE_DOS_HEADER pDosHeader);
+
 //获取NtHeader
 PIMAGE_NT_HEADERS GetNtHeader(PIMAGE_DOS_HEADER pDosHeader);
 
@@ -75,10 +78,10 @@ VOID AddSectionAttribute(PIMAGE_SECTION_HEADER pLastSectionHeader, INT Add);
 BOOL	CalcSectionTableAddress(PIMAGE_DOS_HEADER pDosHeader, PDWORD dwStartVirtualAddress, PDWORD dwStartFileAddress);
 
 //扩展内存
-PBYTE	StretchFileToMemory(PIMAGE_DOS_HEADER pDosHeader,PDWORD pFileSize);
+PBYTE	StretchFileToMemory(PIMAGE_DOS_HEADER pDosHeader, PDWORD pFileSize);
 
 //拷贝整个PE头
 VOID CopyHeader(LPVOID	pDst, PIMAGE_DOS_HEADER	pDosHeader);
 
 //拷贝区块
-BOOL CopyAllSection(LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile,DWORD dwSizeOfImage);
+BOOL CopyAllSection(LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile, DWORD dwSizeOfImage);

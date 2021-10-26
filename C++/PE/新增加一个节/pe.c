@@ -16,6 +16,20 @@ BOOL	IsPE(PIMAGE_DOS_HEADER pDosHeader) {
 	return bResult;
 }
 
+//当前位数判断
+BOOL	IsCurrentBit(PIMAGE_DOS_HEADER pDosHeader) {
+	PIMAGE_NT_HEADERS pNtheader = GetNtHeader(pDosHeader);
+	WORD CurrentMachine = pNtheader->FileHeader.Machine;
+#ifdef _WIN64
+	if (CurrentMachine == IMAGE_FILE_MACHINE_I386) {
+#else
+	if (CurrentMachine == IMAGE_FILE_MACHINE_AMD64 || CurrentMachine == IMAGE_FILE_MACHINE_IA64) {
+#endif // _WIN64
+		printf("[-]当前版本不对，请切换成另一个版本\n");
+		return FALSE;
+	}
+	return TRUE;
+}
 
 //获取NtHeader
 PIMAGE_NT_HEADERS GetNtHeader(PIMAGE_DOS_HEADER pDosHeader) {
@@ -78,7 +92,7 @@ VOID AddNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	AddSectionNum) {
 //设置NumberOfSections
 VOID SetNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	SectionNum) {
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
-	pNtHeader->FileHeader.NumberOfSections= SectionNum;
+	pNtHeader->FileHeader.NumberOfSections = SectionNum;
 }
 
 //设置SizeOfImage
@@ -199,7 +213,7 @@ DWORD	GetAllSizeOfSection(PIMAGE_DOS_HEADER pDosHeader) {
 	GetAlignment(pDosHeader, &PeAlignment);
 
 	DWORD dwMax = pLastSectionHeader->SizeOfRawData > pLastSectionHeader->Misc.VirtualSize ? pLastSectionHeader->SizeOfRawData : pLastSectionHeader->Misc.VirtualSize;
-	return pLastSectionHeader->VirtualAddress + dwMax - GetAlign(PeAlignment.SectionAlignment,pNtHeader->OptionalHeader.SizeOfHeaders );
+	return pLastSectionHeader->VirtualAddress + dwMax - GetAlign(PeAlignment.SectionAlignment, pNtHeader->OptionalHeader.SizeOfHeaders);
 }
 
 //计算添加PointerToRawData和VirtualAddress
@@ -224,7 +238,7 @@ BOOL	CalcSectionTableAddress(PIMAGE_DOS_HEADER pDosHeader, PDWORD pdwStartVirtua
 
 
 //扩展内存
-PBYTE	StretchFileToMemory(PIMAGE_DOS_HEADER pDosHeader,PDWORD pFileSize) {
+PBYTE	StretchFileToMemory(PIMAGE_DOS_HEADER pDosHeader, PDWORD pFileSize) {
 	//传入的是 硬盘中文件的映射
 	PBYTE	pMemory = NULL;
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
@@ -259,7 +273,7 @@ VOID CopyHeader(LPVOID	pDst, PIMAGE_DOS_HEADER	pDosHeader) {
 }
 
 //拷贝区块
-BOOL CopyAllSection(LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile,DWORD dwSizeOfImage) {
+BOOL CopyAllSection(LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile, DWORD dwSizeOfImage) {
 
 	//获取SectionTable
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pFile);
