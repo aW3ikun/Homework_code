@@ -2,6 +2,42 @@
 
 PBYTE pZero = NULL;
 
+//RVAToFileOffset
+DWORD RVAToOffset(PIMAGE_DOS_HEADER pDosHeader,ULONG uRvaAddr) {
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
+	//获取区段头表 
+	PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(pNtHeader);
+
+	//获取区段的数量  --- nt表中的文件头中  
+	DWORD dwSize = pNtHeader->FileHeader.NumberOfSections;
+
+	for (DWORD i = 0; i < dwSize; i++) {
+		if ((pSectionHeader[i].VirtualAddress <= uRvaAddr) &&
+			((pSectionHeader[i].VirtualAddress + pSectionHeader[i].Misc.VirtualSize) > uRvaAddr)) {
+			return (uRvaAddr - pSectionHeader[i].VirtualAddress + pSectionHeader[i].PointerToRawData);
+		}
+	}
+	return 0;
+}
+
+//FileOffsetToRva
+DWORD OffsetToRVA(PIMAGE_DOS_HEADER pDosHeader,ULONG uOffsetAddr) {
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
+
+	//获取区段头表 
+	PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(pNtHeader);
+
+	//获取区段的数量  --- nt表中的文件头中  
+	DWORD dwSize = pNtHeader->FileHeader.NumberOfSections;
+
+	for (DWORD i = 0; i < dwSize; i++) {
+		if ((pSectionHeader[i].PointerToRawData <= uOffsetAddr) &&
+			(pSectionHeader[i].PointerToRawData + pSectionHeader[i].SizeOfRawData > uOffsetAddr)) {
+			return (uOffsetAddr - pSectionHeader[i].PointerToRawData + pSectionHeader[i].VirtualAddress);
+		}
+	}
+	return 0;
+}
 
 //判断PE文件
 BOOL	IsPE(PIMAGE_DOS_HEADER pDosHeader) {
@@ -215,6 +251,18 @@ DWORD	GetAllSizeOfSection(PIMAGE_DOS_HEADER pDosHeader) {
 	DWORD dwMax = pLastSectionHeader->SizeOfRawData > pLastSectionHeader->Misc.VirtualSize ? pLastSectionHeader->SizeOfRawData : pLastSectionHeader->Misc.VirtualSize;
 	return pLastSectionHeader->VirtualAddress + dwMax - GetAlign(PeAlignment.SectionAlignment, pNtHeader->OptionalHeader.SizeOfHeaders);
 }
+
+//获取特定IMAGE_DATA_DIRECTORY的RVA
+ULONG_PTR GetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry) {
+	PIMAGE_NT_HEADERS	pNtHeader = GetNtHeader(pDosHeader);
+	return pNtHeader->OptionalHeader.DataDirectory[wDirectoryEntry].VirtualAddress;
+}
+//获取特定IMAGE_DATA_DIRECTORY的Size
+ULONG_PTR GetDataDirectorySize(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry) {
+	PIMAGE_NT_HEADERS	pNtHeader = GetNtHeader(pDosHeader);
+	return pNtHeader->OptionalHeader.DataDirectory[wDirectoryEntry].Size;
+}
+
 
 //计算添加PointerToRawData和VirtualAddress
 BOOL	CalcSectionTableAddress(PIMAGE_DOS_HEADER pDosHeader, PDWORD pdwStartVirtualAddress, PDWORD pdwStartFileAddress) {

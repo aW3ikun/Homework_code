@@ -4,6 +4,11 @@
 //指向SectionTable的末尾
 extern  PBYTE pZero;
 
+//RVAToFileOffset
+DWORD RVAToOffset(PIMAGE_DOS_HEADER pDosHeader, ULONG uRvaAddr);
+
+//FileOffsetToRva
+DWORD OffsetToRVA(PIMAGE_DOS_HEADER pDosHeader, ULONG uOffsetAddr);
 
 //判断PE文件
 BOOL	IsPE(PIMAGE_DOS_HEADER pDosHeader);
@@ -53,6 +58,10 @@ INT GetSectionCharacteristics(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial);
 //获取合并的后的区段大小
 DWORD	GetAllSizeOfSection(PIMAGE_DOS_HEADER pDosHeader);
 
+//获取特定IMAGE_DATA_DIRECTORY的RVA
+ULONG_PTR GetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry);
+//获取特定IMAGE_DATA_DIRECTORY的Size
+ULONG_PTR GetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry);
 //判断节区空间是否空余空间 >=0x50
 BOOL	JudgeSize(PIMAGE_DOS_HEADER	pDosHeader);
 

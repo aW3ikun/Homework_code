@@ -2,7 +2,7 @@
 #include"pe.h"
 
 //检查PE和版本
-BOOL check(PIMAGE_DOS_HEADER pDosHeader){
+BOOL checkPeAndBit(PIMAGE_DOS_HEADER pDosHeader){
 	return (IsPE(pDosHeader) && IsCurrentBit(pDosHeader));
 }
 
@@ -77,8 +77,8 @@ BOOL	MyWriteFile(PBYTE pFileBuffer, DWORD FileSize, PCHAR pFileName) {
 	return bResult;
 }
 
-//拷贝数据
-VOID	MyCopyBuffer(PBYTE	pFileBuffer, DWORD	dwSectionSize, DWORD dwFileSize, PBYTE pCode) {
+//拷贝数据到末尾
+VOID	MyCopyBufferToFileEnd(PBYTE	pFileBuffer, DWORD	dwSectionSize, DWORD dwFileSize, PBYTE pCode) {
 	PBYTE pBufferStart = (PBYTE)((ULONG_PTR)pFileBuffer - dwSectionSize + dwFileSize);
 	memcpy(pBufferStart, pCode, dwSectionSize);
 }
@@ -227,7 +227,7 @@ BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 		printf("[+]文件读取成功\n");
 		pDosHeader = (PIMAGE_DOS_HEADER)pFile;
 
-		if (!check(pDosHeader)) {
+		if (!checkPeAndBit(pDosHeader)) {
 			return FALSE;
 		}
 
@@ -246,7 +246,7 @@ BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 			}
 		}
 
-		MyCopyBuffer(pFile, dwSectionSize, dwFileSize, pCode);
+		MyCopyBufferToFileEnd(pFile, dwSectionSize, dwFileSize, pCode);
 
 		//do sth....
 
@@ -288,7 +288,7 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 			printf("[+]文件读取成功\n");
 			pDosHeader = (PIMAGE_DOS_HEADER)pFile;
 
-			if (!check(pDosHeader)) {
+			if (!checkPeAndBit(pDosHeader)) {
 				bResult = FALSE;
 				break;
 
@@ -307,7 +307,92 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 
 			}
 
-			MyCopyBuffer(pFile, dwSectionSize, dwFileSize, pCode);
+			MyCopyBufferToFileEnd(pFile, dwSectionSize, dwFileSize, pCode);
+
+			if (MyWriteFile(pDosHeader, dwFileSize, pFileName)) {
+				printf("[+]文件写入成功\n");
+				bResult = TRUE;
+			}
+			else {
+				bResult = FALSE;
+				break;
+			}
+		}
+		else {
+			return FALSE;
+		}
+	} while (0);
+
+	if (pFile != NULL) {
+		VirtualFree(pFile, 0, MEM_RELEASE);
+	}
+
+	return bResult;
+}
+
+//扩大一个节，并添加额外的导入表
+BOOL	ExpandSectionToAddImportTable(PCHAR pFileName, PCHAR pDllName, PCHAR pFuncName) {
+	PIMAGE_DOS_HEADER pDosHeader = NULL;
+	BOOL bResult = FALSE;
+	DWORD dwFileSize = 0;
+	//默认扩大0x200字节
+	DWORD	dwExpandSize = 0x200;
+	//文件映射到
+	PBYTE pFile = MyReadFile(pFileName, &dwFileSize, dwExpandSize);
+
+	do {
+		if (pFile != NULL) {
+			printf("[+]文件读取成功\n");
+			pDosHeader = (PIMAGE_DOS_HEADER)pFile;
+
+			if (!checkPeAndBit(pDosHeader)) {
+				bResult = FALSE;
+				break;
+
+			}
+
+			//获取最后一个节表，修改属性
+			DWORD dwNumberOfSection = GetNumberOfSection(pDosHeader);
+			PIMAGE_SECTION_HEADER pLastSectionHeader = GetXXSectionHeader(pDosHeader, dwNumberOfSection);
+			//添加节表属性
+			AddSectionAttribute(pLastSectionHeader, IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE);
+			//符合扩大一个节的习惯，修改最后一个节表的SizeOfRawData 和 VirtualSize
+			SetLastSectionRawDataAndVirtualSize(pLastSectionHeader, dwExpandSize);
+			if (!AddSizeOfImage(pDosHeader, dwExpandSize)) {
+				bResult = FALSE;
+				break;
+
+			}
+
+			//进行导入表拷贝
+			pZero = (PBYTE)((ULONG_PTR)pFile - dwExpandSize);
+			DWORD	dwImportTableRva = GetDataDirectoryRVA(pDosHeader, IMAGE_DIRECTORY_ENTRY_IMPORT);
+			DWORD	dwImportTableSize = GetDataDirectorySize(pDosHeader, IMAGE_DIRECTORY_ENTRY_IMPORT);
+
+			PBYTE pImportTable = (PBYTE)RVAToOffset(pDosHeader, dwImportTableRva);
+			if (!memcpy_s(pZero, dwExpandSize, pImportTable, dwImportTableSize)) {
+				DEBUG_INFO("[-]拷贝导入表失败\n");
+				bResult = FALSE;
+				break;
+			}
+			else {
+				pZero += dwImportTableSize;
+			}
+			//追加导入表
+			IMAGE_IMPORT_DESCRIPTOR NewImportDescriptor = { 0 };
+
+			//追加8个字节的N表8个字节的IAT表
+			
+			//追加一个 IMAGE_IMPORT_BY_NAME结构, 前2个字节是0后面是函数名称字符串
+			
+			//将IMAGE_IMPORT_BY_NAME结构的RA赋值给N和AT表中的第一项
+			
+			//分配空间存储L名称字符串并将该字符串的RVA欧值给ac属性
+			
+			//修正IMAGE_DATA_DIRECT0RY结构的 VirtualAddress和Sie
+			
+
+			//MyCopyBufferToFileEnd(pFile, dwSectionSize, dwFileSize, pCode);
 
 			if (MyWriteFile(pDosHeader, dwFileSize, pFileName)) {
 				printf("[+]文件写入成功\n");
@@ -345,7 +430,7 @@ BOOL	MergeOneSection(PCHAR pFileName, DWORD dwSectionSize) {
 			printf("[+]文件读取成功\n");
 			pDosHeader = (PIMAGE_DOS_HEADER)pFile;
 
-			if (!check(pDosHeader)) {
+			if (!checkPeAndBit(pDosHeader)) {
 				bResult = FALSE;
 				break;
 			}
