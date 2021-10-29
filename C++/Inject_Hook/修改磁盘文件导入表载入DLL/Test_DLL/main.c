@@ -1,10 +1,12 @@
 #include <windows.h>
+#include<stdio.h>
 
 
 #define DllExport   __declspec( dllexport )
 
 DllExport   void  MyMessageBox() {
-    MessageBoxA(NULL, "Hello DLL", "Hello DLL", MB_OK);
+    /*MessageBoxA(NULL, "Hello DLL", "Hello DLL", MB_OK);*/
+    printf("Heello\n");
 }
 
 BOOL WINAPI DllMain(
@@ -15,6 +17,7 @@ BOOL WINAPI DllMain(
     // Perform actions based on the reason for calling.
     switch (reason) {
     case DLL_PROCESS_ATTACH:
+        MyMessageBox();
         // Initialize once for each new process.
         // Return FALSE to fail DLL load.
         break;

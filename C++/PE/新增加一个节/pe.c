@@ -166,6 +166,7 @@ VOID SetElfanew(PIMAGE_DOS_HEADER pDosHeader, LONG dwElfanew) {
 //扩大一个节的习惯，修改最后一个节表的SizeOfRawData 和 VirtualSize
 VOID SetLastSectionRawDataAndVirtualSize(PIMAGE_SECTION_HEADER pLastSectionHeader, DWORD dwSectionSize) {
 	DWORD	dwMax = (pLastSectionHeader->SizeOfRawData >= pLastSectionHeader->Misc.VirtualSize ? pLastSectionHeader->SizeOfRawData : pLastSectionHeader->Misc.VirtualSize) + dwSectionSize;
+
 	pLastSectionHeader->SizeOfRawData = pLastSectionHeader->Misc.VirtualSize = dwMax;
 }
 
@@ -185,6 +186,16 @@ VOID AddSectionAttribute(PIMAGE_SECTION_HEADER pLastSectionHeader, INT Add) {
 		pLastSectionHeader->Characteristics |= Add;
 	}
 
+}
+//设置特定IMAGE_DATA_DIRECTORY的RVA
+VOID SetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry, DWORD dwVirtualAddress) {
+	PIMAGE_NT_HEADERS	pNtHeader = GetNtHeader(pDosHeader);
+	pNtHeader->OptionalHeader.DataDirectory[wDirectoryEntry].VirtualAddress = dwVirtualAddress;
+}
+//设置特定IMAGE_DATA_DIRECTORY的Size
+VOID SettDataDirectorySize(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry, DWORD dwSize) {
+	PIMAGE_NT_HEADERS	pNtHeader = GetNtHeader(pDosHeader);
+	pNtHeader->OptionalHeader.DataDirectory[wDirectoryEntry].Size = dwSize;
 }
 
 

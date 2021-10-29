@@ -61,7 +61,7 @@ DWORD	GetAllSizeOfSection(PIMAGE_DOS_HEADER pDosHeader);
 //获取特定IMAGE_DATA_DIRECTORY的RVA
 ULONG_PTR GetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry);
 //获取特定IMAGE_DATA_DIRECTORY的Size
-ULONG_PTR GetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry);
+ULONG_PTR GetDataDirectorySize(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectorySize);
 //判断节区空间是否空余空间 >=0x50
 BOOL	JudgeSize(PIMAGE_DOS_HEADER	pDosHeader);
 
@@ -79,6 +79,10 @@ VOID SetLastSectionRawDataAndVirtualSize(PIMAGE_SECTION_HEADER pLastSectionHeade
 VOID SetSizeOfRawDataAndVirtualSize(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial, DWORD dwSize);
 //设置第几个节的属性
 VOID SetSectionCharacteristics(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial, INT Characteristics);
+//设置特定IMAGE_DATA_DIRECTORY的RVA
+VOID SetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry, DWORD dwVirtualAddress);
+//设置特定IMAGE_DATA_DIRECTORY的Size
+VOID SettDataDirectorySize(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry, DWORD dwSize);
 
 //定义节属性
 VOID AddSectionAttribute(PIMAGE_SECTION_HEADER pLastSectionHeader, INT Add);
