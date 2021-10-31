@@ -351,12 +351,12 @@ BOOL	ExpandSectionToAddImportTable(PCHAR pFileName, PCHAR pDllName, PCHAR pFuncN
 
 			}
 
-			//获取最后一个节表，修改属性
+			//为最后一个节添加属性
 			DWORD dwNumberOfSection = GetNumberOfSection(pDosHeader);
-			PIMAGE_SECTION_HEADER pLastSectionHeader = GetXXSectionHeader(pDosHeader, dwNumberOfSection);
-			//添加节表属性
-			AddSectionAttribute(pLastSectionHeader, IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE);
+			AddLSectionAttribute(pDosHeader, IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE, dwNumberOfSection);
+
 			//符合扩大一个节的习惯，修改最后一个节表的SizeOfRawData 和 VirtualSize
+			PIMAGE_SECTION_HEADER pLastSectionHeader = GetXXSectionHeader(pDosHeader, dwNumberOfSection);
 			SetLastSectionRawDataAndVirtualSize(pLastSectionHeader, dwExpandSize);
 			if (!AddSizeOfImage(pDosHeader, dwExpandSize)) {
 				bResult = FALSE;

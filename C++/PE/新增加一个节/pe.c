@@ -187,6 +187,13 @@ VOID AddSectionAttribute(PIMAGE_SECTION_HEADER pLastSectionHeader, INT Add) {
 	}
 
 }
+//为一个节添加属性
+VOID AddLSectionAttribute(PIMAGE_DOS_HEADER pDosHeader, DWORD Attribute, DWORD dwSerial) {
+	//获取一个节表，修改属性
+	PIMAGE_SECTION_HEADER pLastSectionHeader = GetXXSectionHeader(pDosHeader, dwSerial);
+	//添加节表属性
+	AddSectionAttribute(pLastSectionHeader, Attribute);
+}
 //设置特定IMAGE_DATA_DIRECTORY的RVA
 VOID SetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry, DWORD dwVirtualAddress) {
 	PIMAGE_NT_HEADERS	pNtHeader = GetNtHeader(pDosHeader);

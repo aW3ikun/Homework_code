@@ -67,6 +67,8 @@ BOOL	JudgeSize(PIMAGE_DOS_HEADER	pDosHeader);
 
 //增加NumberOfSections
 VOID AddNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	AddSectionNum);
+//为一个节添加属性
+VOID AddLSectionAttribute(PIMAGE_DOS_HEADER pDosHeader, DWORD Attribute, DWORD dwSerial);
 //设置NumberOfSections
 VOID SetNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	SectionNum);
 //设置SizeOfImage
