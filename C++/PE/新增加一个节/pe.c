@@ -358,3 +358,59 @@ BOOL CopyAllSection(LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile, DWORD dwSizeOfImage
 
 
 }
+
+BOOL CopyAndAddImportTable(PIMAGE_DOS_HEADER	pDosHeader, DWORD dwFileSize, DWORD dwExpandSize, PCHAR pDllName, PCHAR pFuncName) {
+	BOOL bResult = TRUE;
+	pZero = (PBYTE)((ULONG_PTR)pDosHeader + dwFileSize - dwExpandSize);
+	PBYTE pImportTableHeader = pZero;
+	DWORD	dwImportTableRva = GetDataDirectoryRVA(pDosHeader, IMAGE_DIRECTORY_ENTRY_IMPORT);
+	DWORD	dwImportTableSize = GetDataDirectorySize(pDosHeader, IMAGE_DIRECTORY_ENTRY_IMPORT);
+
+	PBYTE pImportTable = (PBYTE)((ULONG_PTR)pDosHeader + RVAToOffset(pDosHeader, dwImportTableRva));
+	if (memcpy_s(pZero, dwExpandSize, pImportTable, dwImportTableSize)) {
+		DEBUG_INFO("[-]拷贝导入表失败\n");
+		bResult = FALSE;
+	}
+	else {
+		pZero += dwImportTableSize - sizeof(IMAGE_IMPORT_DESCRIPTOR);
+	}
+
+
+	DWORD	dwSizeOfFuncName = strlen(pFuncName) + 1;
+	DWORD	dwSizeOfDllName = strlen(pDllName) + 1;
+	//追加导入表
+	IMAGE_IMPORT_DESCRIPTOR NewImportDescriptor = { 0 };
+
+	//定位增加的导入表
+	PIMAGE_IMPORT_DESCRIPTOR	pNewImport = pZero;
+	pZero = (PBYTE)((ULONG_PTR)pNewImport + sizeof(IMAGE_IMPORT_DESCRIPTOR));
+	//追加8个字节的INT表8个字节的IAT表
+	//IAT / INT->PIMAGE_THUNK_DATA -> IMAGE_IMPORT_BY_NAME
+	//INT IAT 指针
+	PIMAGE_THUNK_DATA pIATTable = (PIMAGE_THUNK_DATA)((ULONG_PTR)pZero + sizeof(IMAGE_IMPORT_DESCRIPTOR));
+	PIMAGE_THUNK_DATA pINTTable = (PIMAGE_THUNK_DATA)((ULONG_PTR)pIATTable + sizeof(IMAGE_THUNK_DATA));
+
+	//追加一个DLL名字
+	PBYTE	pFileDllName = (PBYTE)((ULONG_PTR)pIATTable + 2 * sizeof(PIMAGE_THUNK_DATA));
+	_memccpy(pFileDllName, pDllName, dwSizeOfDllName, dwSizeOfDllName);
+	pNewImport->Name = OffsetToRVA(pDosHeader, (ULONG)pFileDllName - (ULONG)pDosHeader);
+
+	//追加一个 IMAGE_IMPORT_BY_NAME结构, 前2个字节是0后面是函数名称字符串
+	PIMAGE_IMPORT_BY_NAME pImportByName = (PIMAGE_IMPORT_BY_NAME)((ULONG_PTR)pFileDllName + dwSizeOfDllName);
+	pImportByName->Hint = 0x01;
+	_memccpy(pImportByName->Name, pFuncName, dwSizeOfFuncName, dwSizeOfFuncName);
+
+	//将IMAGE_IMPORT_BY_NAME结构的RVA赋值给INT和IAT表中的第一项
+	pNewImport->OriginalFirstThunk = OffsetToRVA(pDosHeader, (ULONG)pINTTable - (ULONG)pDosHeader);
+	pNewImport->OriginalFirstThunk = 0;
+	pNewImport->FirstThunk = OffsetToRVA(pDosHeader, (ULONG)pIATTable - (ULONG)pDosHeader);
+	//pINTTable->u1.AddressOfData = pIATTable->u1.AddressOfData = OffsetToRVA(pDosHeader,(ULONG)pImportByName - (ULONG)pDosHeader);
+	pIATTable->u1.AddressOfData = OffsetToRVA(pDosHeader, (ULONG)pImportByName - (ULONG)pDosHeader);
+
+	//修正IMAGE_DATA_DIRECT0RY结构的 VirtualAddress和Sie
+	DWORD	dwNewVirtualAddress = OffsetToRVA(pDosHeader, (ULONG)pImportTableHeader - (ULONG)pDosHeader);
+
+	SetDataDirectoryRVA(pDosHeader, IMAGE_DIRECTORY_ENTRY_IMPORT, dwNewVirtualAddress);
+	SettDataDirectorySize(pDosHeader, IMAGE_DIRECTORY_ENTRY_IMPORT, dwImportTableSize + sizeof(IMAGE_IMPORT_DESCRIPTOR));
+	return bResult;
+}

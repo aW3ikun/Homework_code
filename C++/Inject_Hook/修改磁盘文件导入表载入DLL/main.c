@@ -5,10 +5,11 @@
 int main(int argc, char* argv[]) {
 	BOOL bResult = FALSE;
 
-	PCHAR	pFileName = "D:\\repos\\Homework_code\\C++\\PE\\新增加一个节\\x64\\Debug\\64-NOTEPAD.EXE";
+	//PCHAR	pFileName = "D:\\repos\\Homework_code\\C++\\PE\\新增加一个节\\x64\\Debug\\64-NOTEPAD.EXE";
 	//PCHAR	pFileName = "C:\\Users\\awei_\\Downloads\\EverEdit\\EverEdit.exe";
 	//PCHAR	pFileName = "D:\\repos\\Homework_code\\C++\\PE\\新增加一个节\\x64\\\Release\\Test_exe.exe";
 	//PCHAR pFileName = "D:\\repos\\Homework_code\\C++\\PE\\新增加一个节\\Release\\Test_exe.exe";
+	PCHAR pFileName = ".\\Test_exe.exe";
 	PCHAR pDllName = "Test_DLL.dll";
 	PCHAR pFuncName = "MyMessageBox";
 

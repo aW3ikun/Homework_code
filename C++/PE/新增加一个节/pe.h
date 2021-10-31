@@ -98,3 +98,6 @@ VOID CopyHeader(LPVOID	pDst, PIMAGE_DOS_HEADER	pDosHeader);
 
 //拷贝区块
 BOOL CopyAllSection(LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile, DWORD dwSizeOfImage);
+
+//拷贝导入表
+BOOL CopyAndAddImportTable(PIMAGE_DOS_HEADER	pDosHeader, DWORD dwFileSize, DWORD dwExpandSize, PCHAR pDllName, PCHAR pFuncName);

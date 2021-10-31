@@ -5,8 +5,8 @@
 #define DllExport   __declspec( dllexport )
 
 DllExport   void  MyMessageBox() {
-    /*MessageBoxA(NULL, "Hello DLL", "Hello DLL", MB_OK);*/
-    printf("Heello\n");
+    MessageBoxA(NULL, "Hello DLL", "Hello DLL", MB_OK);
+    //printf("Heello\n");
 }
 
 BOOL WINAPI DllMain(
