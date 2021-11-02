@@ -398,7 +398,6 @@ BOOL	ExpandSectionToAddImportTable(PCHAR pFileName, PCHAR pDllName, PCHAR pFuncN
 	return bResult;
 }
 
-
 //合并成一个节
 BOOL	MergeOneSection(PCHAR pFileName, DWORD dwSectionSize) {
 	PIMAGE_DOS_HEADER pDosHeader = NULL;
