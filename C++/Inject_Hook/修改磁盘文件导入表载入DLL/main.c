@@ -9,8 +9,8 @@ int main(int argc, char* argv[]) {
 	//PCHAR	pFileName = "C:\\Users\\awei_\\Downloads\\EverEdit\\EverEdit.exe";
 	//PCHAR	pFileName = "D:\\repos\\Homework_code\\C++\\PE\\新增加一个节\\x64\\\Release\\Test_exe.exe";
 	//PCHAR pFileName = "D:\\repos\\Homework_code\\C++\\PE\\新增加一个节\\Release\\Test_exe.exe";
-	PCHAR pFileName = ".\\Test_exe.exe";
-	PCHAR pDllName = "Test_DLL.dll";
+	PCHAR pFileName = ".\\64-NOTEPAD.EXE";
+	PCHAR pDllName = "ReflectiveDLL_Inject_x64.dll";
 	PCHAR pFuncName = "MyMessageBox";
 
 
