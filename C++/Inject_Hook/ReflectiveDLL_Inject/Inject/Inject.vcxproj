@@ -140,7 +140,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ReflectiveLoader.c" />
     <ClCompile Include="Inject.c" />
   </ItemGroup>
   <ItemGroup>

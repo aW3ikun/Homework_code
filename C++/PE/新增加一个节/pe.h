@@ -21,22 +21,16 @@ PIMAGE_NT_HEADERS GetNtHeader(PIMAGE_DOS_HEADER pDosHeader);
 
 //获取NtHeaders大小
 DWORD	GetSizeOfNtHeaders();
-
 //获取SectionTable大小 = 所有SectionHeader加起来
 DWORD GetSizeOfSectionTable(PIMAGE_DOS_HEADER pDosHeader);
-
 //获取SectionHeader大小
 DWORD GetSizeOfSectionHeader();
-
 //获取DOS+DOS_Stub
 DWORD	GetSizeOfDosAndStub(PIMAGE_DOS_HEADER pDosHeader);
-
 //获取Dos头大小
 DWORD	GetSizeOfDos();
-
 //取模判断大小
 DWORD	GetStartAddress(DWORD	dwAlignment, DWORD	dwSize, DWORD	dwAddress);
-
 //获取对齐大小
 DWORD GetAlign(DWORD	dwAlignment, DWORD	dwSize);
 
@@ -49,7 +43,6 @@ VOID GetAlignment(PIMAGE_DOS_HEADER	pDosHeader, PPEALIGNMENT pPeAlignment);
 
 //获取节表数
 DWORD	GetNumberOfSection(PIMAGE_DOS_HEADER	pDosHeader);
-
 //获取第几个节表
 PIMAGE_SECTION_HEADER	GetXXSectionHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial);
 //获取节表属性

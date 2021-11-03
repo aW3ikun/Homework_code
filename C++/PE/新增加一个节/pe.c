@@ -3,7 +3,7 @@
 PBYTE pZero = NULL;
 
 //RVAToFileOffset
-DWORD RVAToOffset(PIMAGE_DOS_HEADER pDosHeader,ULONG uRvaAddr) {
+DWORD RVAToOffset(PIMAGE_DOS_HEADER pDosHeader, ULONG uRvaAddr) {
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
 	//获取区段头表 
 	PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(pNtHeader);
@@ -21,7 +21,7 @@ DWORD RVAToOffset(PIMAGE_DOS_HEADER pDosHeader,ULONG uRvaAddr) {
 }
 
 //FileOffsetToRva
-DWORD OffsetToRVA(PIMAGE_DOS_HEADER pDosHeader,ULONG uOffsetAddr) {
+DWORD OffsetToRVA(PIMAGE_DOS_HEADER pDosHeader, ULONG uOffsetAddr) {
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
 
 	//获取区段头表 
@@ -42,12 +42,17 @@ DWORD OffsetToRVA(PIMAGE_DOS_HEADER pDosHeader,ULONG uOffsetAddr) {
 //判断PE文件
 BOOL	IsPE(PIMAGE_DOS_HEADER pDosHeader) {
 	BOOL bResult = FALSE;
-	if (pDosHeader->e_magic == IMAGE_DOS_SIGNATURE && GetNtHeader(pDosHeader)->Signature == IMAGE_NT_SIGNATURE) {
-		bResult = TRUE;
+	DWORD	dwSizeOfDos = pDosHeader->e_lfanew;
+	if (pDosHeader->e_magic == IMAGE_DOS_SIGNATURE) {
+		if (dwSizeOfDos >= GetSizeOfDos() && dwSizeOfDos < 1024) {
+			if (GetNtHeader(pDosHeader)->Signature == IMAGE_NT_SIGNATURE) {
+				bResult = TRUE;
+			}
+		}
 	}
 
 	if (!bResult) {
-		printf("[-]不是PE\n");
+		DEBUG_INFO("[-]不是PE\n");
 	}
 	return bResult;
 }
@@ -61,7 +66,7 @@ BOOL	IsCurrentBit(PIMAGE_DOS_HEADER pDosHeader) {
 #else
 	if (CurrentMachine == IMAGE_FILE_MACHINE_AMD64 || CurrentMachine == IMAGE_FILE_MACHINE_IA64) {
 #endif // _WIN64
-		printf("[-]当前版本不对，请切换成另一个版本\n");
+		DEBUG_INFO("[-]当前版本不对，请切换成另一个版本\n");
 		return FALSE;
 	}
 	return TRUE;
@@ -134,12 +139,12 @@ VOID SetNumberOfSections(PIMAGE_DOS_HEADER pDosHeader, WORD	SectionNum) {
 //设置SizeOfImage
 BOOL AddSizeOfImage(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 	if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
-		printf("[-]不是Dos头\n");
+		DEBUG_INFO("[-]不是Dos头\n");
 		return FALSE;
 	}
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
 	if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
-		printf("[-]不是Dos头\n");
+		DEBUG_INFO("[-]不是Dos头\n");
 		return FALSE;
 	}
 	pNtHeader->OptionalHeader.SizeOfImage += dwSectionSize;
@@ -148,12 +153,12 @@ BOOL AddSizeOfImage(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 //设置SizeOfImage
 BOOL SetSizeOfImage(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSize) {
 	if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
-		printf("[-]不是Dos头\n");
+		DEBUG_INFO("[-]不是Dos头\n");
 		return FALSE;
 	}
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
 	if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
-		printf("[-]不是Dos头\n");
+		DEBUG_INFO("[-]不是Dos头\n");
 		return FALSE;
 	}
 	pNtHeader->OptionalHeader.SizeOfImage = dwSize;
@@ -292,7 +297,7 @@ BOOL	CalcSectionTableAddress(PIMAGE_DOS_HEADER pDosHeader, PDWORD pdwStartVirtua
 		GetAlignment(pDosHeader, &pPeAlignment);
 	}
 	else {
-		printf("[-]识别最后一个节表失败\n");
+		DEBUG_INFO("[-]识别最后一个节表失败\n");
 		return FALSE;
 	}
 	//计算该填充的值
@@ -335,7 +340,9 @@ PBYTE	StretchFileToMemory(PIMAGE_DOS_HEADER pDosHeader, PDWORD pFileSize) {
 VOID CopyHeader(LPVOID	pDst, PIMAGE_DOS_HEADER	pDosHeader) {
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
 	DWORD	dwSizeOfHeader = pNtHeader->OptionalHeader.SizeOfHeaders;
-	CopyMemory(pDst, pDosHeader, dwSizeOfHeader);
+	//CopyMemory(pDst, pDosHeader, dwSizeOfHeader);
+	while(dwSizeOfHeader--)
+		*((BYTE*)pDst)++ = *((BYTE*)pDosHeader)++;
 }
 
 //拷贝区块

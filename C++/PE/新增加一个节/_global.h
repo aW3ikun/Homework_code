@@ -6,9 +6,11 @@
 
 //Ìæ»»º¯ÊýÃû  
 #ifdef _DEBUG  
-#define DEBUG_INFO(format, ...) printf("File:%s, Line:%d, Function:%s\n%s\n", __FILE__, __LINE__, __FUNCTION__,format);
+//#define DEBUG_INFO(format, ...) printf("File:%s, Line:%d, Function:%s\n%s\n", __FILE__, __LINE__, __FUNCTION__,format);
+#define DEBUG_INFO(format, ...) NULL;
 #else  
-#define DEBUG_INFO(format, ...) printf("%s\n",format);
+//#define DEBUG_INFO(format, ...) printf("%s\n",format);
+#define DEBUG_INFO(format, ...) NULL;
 #endif  
 
 

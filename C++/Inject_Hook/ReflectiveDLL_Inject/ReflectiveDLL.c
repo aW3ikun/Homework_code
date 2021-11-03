@@ -6,7 +6,7 @@ BOOL WINAPI DllMain(
 
 	switch (fdwReason) {
 	case DLL_PROCESS_ATTACH:
-		MessageBoxA(NULL, "Hello from DllMain!", "Reflective Dll Injection", MB_OK);
+		//MessageBoxA(NULL, "Hello from DllMain!", "Reflective Dll Injection", MB_OK);
 		break;
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:

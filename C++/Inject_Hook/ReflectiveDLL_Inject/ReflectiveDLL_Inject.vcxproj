@@ -143,13 +143,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\PE\新增加一个节\pe.c" />
-    <ClCompile Include="..\..\PE\新增加一个节\_global.c" />
+    <ClCompile Include="GetFunction.c" />
     <ClCompile Include="ReflectiveDLL.c" />
     <ClCompile Include="ReflectiveLoader.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\PE\新增加一个节\pe.h" />
-    <ClInclude Include="..\..\PE\新增加一个节\_global.h" />
+    <ClInclude Include="GetFunction.h" />
     <ClInclude Include="ReflectiveLoader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -18,24 +18,24 @@
     <ClCompile Include="ReflectiveDLL.c">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\PE\新增加一个节\_global.c">
+    <ClCompile Include="ReflectiveLoader.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GetFunction.c">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\PE\新增加一个节\pe.c">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ReflectiveLoader.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\PE\新增加一个节\_global.h">
+    <ClInclude Include="ReflectiveLoader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GetFunction.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\PE\新增加一个节\pe.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="ReflectiveLoader.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
