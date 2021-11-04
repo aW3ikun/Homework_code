@@ -6,4 +6,7 @@
 
 #define DLLEXPORT	 __declspec( dllexport )
 
+typedef ULONG_PTR (WINAPI* REFLECTIVELOADER)( VOID );
+typedef BOOL (WINAPI* DLLMAIN)( HINSTANCE, DWORD, LPVOID );
+
 #endif // !_REFLECTIVELOADER_H_

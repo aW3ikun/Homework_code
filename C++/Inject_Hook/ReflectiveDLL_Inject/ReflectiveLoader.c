@@ -11,10 +11,11 @@
 
 //__declspec(noinline) 不进行内联
 //_ReturnAddress返回当前汇编命令执行地址
-DECLSPEC_NOINLINE ULONG_PTR	ReturnFuncAddres(VOID) {
+DECLSPEC_NOINLINE ULONG_PTR	ReturnFuncAddres(VOID)
+{
 	//Call _ReturnAddress
 	//mov	[],rax -> rax=这一行的地址
-	return (ULONG_PTR)_ReturnAddress();
+	return (ULONG_PTR)_ReturnAddress( );
 }
 
 
@@ -33,15 +34,20 @@ DLLEXPORT	ULONG_PTR	WINAPI ReflectiveLoader(LPVOID	lpParameter)
 
 	//获取Caller函数地址后,内存向上搜寻IMAGE_DOS_HEADER,定位文件位置
 	ULONG_PTR uiBaseAddr;
+	ULONG_PTR uiNtHeader;
+	ULONG_PTR uiImageSize;
+	ULONG_PTR uiEntryPoint;
 
 	//定义函数指针
 	VIRTUALALLOC pVirtualAlloc = NULL;
 	GETPROCADDRESS	pGetProcAddress = NULL;
 	LOADLIBRARY	pLoadLibrary = NULL;
+	//用来刷新指令
+	NTFLUSHINSTRUCTIONCACHE pNtFlushInstructionCache = NULL;
 
 	//step0 获取Dos头部	
-	uiBaseAddr = ReturnFuncAddres();
-	while (TRUE) {
+	uiBaseAddr = ReturnFuncAddres( );
+	while ( TRUE ) {
 		////汇编"POP R10" = 0x4D5A，所以要做两步校验PE文件
 		//if (((PIMAGE_DOS_HEADER)uiFuncAddr)->e_magic == IMAGE_DOS_SIGNATURE) {
 		//	uiHeaderValue = ((PIMAGE_DOS_HEADER)uiFuncAddr)->e_lfanew;
@@ -52,7 +58,7 @@ DLLEXPORT	ULONG_PTR	WINAPI ReflectiveLoader(LPVOID	lpParameter)
 		//		if (((PIMAGE_NT_HEADERS)uiHeaderValue)->Signature == IMAGE_NT_SIGNATURE)
 		//			break;
 		//}
-		if (IsPE((PIMAGE_DOS_HEADER)uiBaseAddr))
+		if ( IsPE((PIMAGE_DOS_HEADER)uiBaseAddr) )
 			break;
 		uiBaseAddr--;
 	}
@@ -62,12 +68,42 @@ DLLEXPORT	ULONG_PTR	WINAPI ReflectiveLoader(LPVOID	lpParameter)
 	pVirtualAlloc = GetFunction(KERNEL32DLL_HASH, VIRTUALALLOC_HASH);
 	pGetProcAddress = GetFunction(KERNEL32DLL_HASH, GETPROCADDRESS_HASH);
 	pLoadLibrary = GetFunction(KERNEL32DLL_HASH, LOADLIBRARYA_HASH);
-
+	pNtFlushInstructionCache = GetFunction(NTDLLDLL_HASH, NTFLUSHINSTRUCTIONCACHE_HASH);
 	//step1 申请空间，拷贝头部
-	uiBaseAddr = (ULONG_PTR)pVirtualAlloc(NULL, ((PIMAGE_NT_HEADERS)uiDosHeader)->OptionalHeader.SizeOfImage, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	//获取Nt头部
+	uiNtHeader = (ULONG_PTR)GetNtHeader((PIMAGE_DOS_HEADER)uiDosHeader);
+	uiImageSize = (ULONG_PTR)( (PIMAGE_NT_HEADERS)uiNtHeader )->OptionalHeader.SizeOfImage;
+
+	//申请空间
+	uiBaseAddr = (ULONG_PTR)pVirtualAlloc(NULL, ( (PIMAGE_NT_HEADERS)uiDosHeader )->OptionalHeader.SizeOfImage, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+
+	//拷贝
 	CopyHeader((LPVOID)uiBaseAddr, uiDosHeader);
 
+	//step3 拷贝区块
+	CopyAllSection((LPVOID)uiBaseAddr, (PIMAGE_DOS_HEADER)uiDosHeader, uiImageSize);
+
+	//step4 处理导入表
+	ShellCodeRepairImportTable((PIMAGE_DOS_HEADER)uiBaseAddr, pGetProcAddress, pLoadLibrary);
+
+	//step5 处理重定位表
+	ShellCodeFixReloc((PIMAGE_DOS_HEADER)uiBaseAddr, (PIMAGE_DOS_HEADER)uiDosHeader);
+
+
+
+	//step6 刷新指针
+	pNtFlushInstructionCache((HANDLE)( uiBaseAddr - 1 ), NULL, 0);
+
+
+	//step7 调用EntryPoint
+	uiEntryPoint = uiBaseAddr + (ULONG_PTR)GetNtHeader(uiBaseAddr)->OptionalHeader.AddressOfEntryPoint;
+#ifdef REFLECTIVELOADER_NO_PARAMETER
+	((DLLMAIN)uiEntryPoint)( (HINSTANCE)uiBaseAddr, DLL_PROCESS_ATTACH, NULL );
+#else
+	( (DLLMAIN)uiEntryPoint )( (HINSTANCE)uiBaseAddr, DLL_PROCESS_ATTACH, lpParameter );
+#endif // REFLECTIVELOADER_NO_PARAMETER
+
+
 	//step8 Return DllMain	Address
-	//return	uiBaseAddr;
-	return 0;
+	return	uiEntryPoint;
 }

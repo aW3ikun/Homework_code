@@ -1,6 +1,20 @@
 #pragma once
 #include"_global.h"
 
+#define DEREF( name )*(UINT_PTR *)(name)
+#define DEREF_DWORD( name )*(UINT_PTR *)(name)
+#define DEREF_ULONGPTR( name )*(ULONG_PTR *)(name)
+#define DEREF_WORD( name )*(ULONG_PTR *)(name)
+
+typedef FARPROC(WINAPI* GETPROCADDRESS)( HMODULE, LPCSTR );
+typedef HMODULE(WINAPI* LOADLIBRARY)( LPCWSTR );
+
+//重定位块 四字节 由4位的Type与12位的Offset合成
+typedef struct {
+	WORD	offset : 12;
+	WORD	type : 4;
+}IMAGE_RELOC, * PIMAGE_RELOC;
+
 //指向SectionTable的末尾
 extern  PBYTE pZero;
 
@@ -17,20 +31,20 @@ BOOL	IsPE(PIMAGE_DOS_HEADER pDosHeader);
 BOOL	IsCurrentBit(PIMAGE_DOS_HEADER pDosHeader);
 
 //获取NtHeader
-PIMAGE_NT_HEADERS GetNtHeader(PIMAGE_DOS_HEADER pDosHeader);
+inline PIMAGE_NT_HEADERS GetNtHeader(PIMAGE_DOS_HEADER pDosHeader);
 
 //获取NtHeaders大小
-DWORD	GetSizeOfNtHeaders();
+DWORD	GetSizeOfNtHeaders( );
 //获取SectionTable大小 = 所有SectionHeader加起来
 DWORD GetSizeOfSectionTable(PIMAGE_DOS_HEADER pDosHeader);
 //获取SectionHeader大小
-DWORD GetSizeOfSectionHeader();
+DWORD GetSizeOfSectionHeader( );
 //获取DOS+DOS_Stub
 DWORD	GetSizeOfDosAndStub(PIMAGE_DOS_HEADER pDosHeader);
 //获取Dos头大小
-DWORD	GetSizeOfDos();
+DWORD	GetSizeOfDos( );
 //取模判断大小
-DWORD	GetStartAddress(DWORD	dwAlignment, DWORD	dwSize, DWORD	dwAddress);
+DWORD   GetStartAddress(DWORD	dwAlignment, DWORD	dwSize, DWORD	dwAddress);
 //获取对齐大小
 DWORD GetAlign(DWORD	dwAlignment, DWORD	dwSize);
 
@@ -52,7 +66,8 @@ INT GetSectionCharacteristics(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial);
 DWORD	GetAllSizeOfSection(PIMAGE_DOS_HEADER pDosHeader);
 
 //获取特定IMAGE_DATA_DIRECTORY的RVA
-ULONG_PTR GetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry);
+//IMAGE_DIRECTORY_ENTRY_XXXX
+inline ULONG_PTR GetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry);
 //获取特定IMAGE_DATA_DIRECTORY的Size
 ULONG_PTR GetDataDirectorySize(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectorySize);
 //判断节区空间是否空余空间 >=0x50
@@ -96,3 +111,11 @@ BOOL CopyAllSection(LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile, DWORD dwSizeOfImage
 
 //拷贝导入表
 BOOL CopyAndAddImportTable(PIMAGE_DOS_HEADER	pDosHeader, DWORD dwFileSize, DWORD dwExpandSize, PCHAR pDllName, PCHAR pFuncName);
+
+//Shellcode 处理导入表
+//需要传入函数地址
+VOID ShellCodeRepairImportTable (
+	PIMAGE_DOS_HEADER pDosHeader, GETPROCADDRESS pGetProcAddress, LOADLIBRARY pLoadLibrary);
+
+//ShellCode处理重定位
+VOID	ShellCodeFixReloc(PIMAGE_DOS_HEADER	pMemory, PIMAGE_DOS_HEADER pDosHeader);
