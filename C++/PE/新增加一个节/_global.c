@@ -2,12 +2,14 @@
 #include"pe.h"
 
 //检查PE和版本
-BOOL checkPeAndBit(PIMAGE_DOS_HEADER pDosHeader){
-	return (IsPE(pDosHeader) && IsCurrentBit(pDosHeader));
+BOOL checkPeAndBit(PIMAGE_DOS_HEADER pDosHeader)
+{
+	return ( IsPE(pDosHeader) && IsCurrentBit(pDosHeader) );
 }
 
 //读取文件并顺便扩展大小到内存中
-PBYTE	MyReadFile(PCHAR pFileName, PDWORD pFileSize, DWORD dwSectionSize) {
+PBYTE	MyReadFile(PCHAR pFileName, PDWORD pFileSize, DWORD dwSectionSize)
+{
 	HANDLE hFile = CreateFileA(pFileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 	//int error = GetLastError();
 	DWORD	SizeOfFile = 0;
@@ -15,31 +17,31 @@ PBYTE	MyReadFile(PCHAR pFileName, PDWORD pFileSize, DWORD dwSectionSize) {
 	PBYTE	lpFileEnd = NULL;
 	DWORD dwBytesToRead = 0;
 	DWORD dwBytesRead = 0;
-	if (hFile != INVALID_HANDLE_VALUE) {
+	if ( hFile != INVALID_HANDLE_VALUE ) {
 		//获取文件大小
-		if (SizeOfFile = GetFileSize(hFile, NULL)) {
+		if ( SizeOfFile = GetFileSize(hFile, NULL) ) {
 			SizeOfFile = SizeOfFile + dwSectionSize;
 			//返回文件大小
 			*pFileSize = SizeOfFile;
 			//获取最终虚拟内存大小
 			dwBytesToRead = SizeOfFile;
 			lpFile = VirtualAlloc(NULL, SizeOfFile, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-			if (lpFile != NULL) {
+			if ( lpFile != NULL ) {
 				lpFileEnd = lpFile;
 				ZeroMemory(lpFile, SizeOfFile);
 				//循环读文件，确保读出完整的文件
 				do {
-					if (!ReadFile(hFile, lpFileEnd, dwBytesToRead, &dwBytesRead, NULL)) {
-						int error = GetLastError();
+					if ( !ReadFile(hFile, lpFileEnd, dwBytesToRead, &dwBytesRead, NULL) ) {
+						int error = GetLastError( );
 						printf("[-]文件读取失败: %d\n", error);
 						return NULL;
 					}
 
-					if (dwBytesRead == 0)
+					if ( dwBytesRead == 0 )
 						break;
 					dwBytesToRead -= dwBytesRead;
 					lpFileEnd += dwBytesRead;
-				} while (dwBytesToRead > 0);
+				} while ( dwBytesToRead > 0 );
 			}
 		}
 		else {
@@ -55,7 +57,8 @@ PBYTE	MyReadFile(PCHAR pFileName, PDWORD pFileSize, DWORD dwSectionSize) {
 }
 
 //文件写入,添加剩余数据
-BOOL	MyWriteFile(PBYTE pFileBuffer, DWORD FileSize, PCHAR pFileName) {
+BOOL	MyWriteFile(PBYTE pFileBuffer, DWORD FileSize, PCHAR pFileName)
+{
 	DWORD dwBytesToWrite = FileSize;
 	DWORD dwBytesWrite = 0;
 	BOOL bResult = FALSE;
@@ -63,23 +66,66 @@ BOOL	MyWriteFile(PBYTE pFileBuffer, DWORD FileSize, PCHAR pFileName) {
 	PCHAR NewFileName = AddFileName(pFileName);
 	HANDLE hFile = CreateFileA(NewFileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 
-	if (WriteFile(hFile, pFileBuffer, dwBytesToWrite, &dwBytesWrite, NULL)) {
+	if ( WriteFile(hFile, pFileBuffer, dwBytesToWrite, &dwBytesWrite, NULL) ) {
 		bResult = TRUE;
 	}
 
-	if (NewFileName != NULL) {
+	if ( NewFileName != NULL ) {
 		free(NewFileName);
 	}
 
-	if (bResult == FALSE) {
+	if ( bResult == FALSE ) {
 		printf("[-]文件写入失败\n");
 	}
 	return bResult;
 }
+//使用堆Heap读取文件
+LPVOID	HeapReadFile(PCHAR pFileName,PDWORD	pFileSize)
+{
+	HANDLE	hFile = NULL;
+	LPVOID	lpBuffer = NULL;
+	DWORD	dwByteRead = 0;
+	DWORD	dwSize = 0;
+
+	do
+	{
+		hFile = CreateFileA(pFileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		if ( hFile == INVALID_HANDLE_VALUE ) {
+			DEBUG_INFO("[-]	Failed to open the DLL file");
+			break;
+		}
+
+		dwSize = *pFileSize = GetFileSize(hFile, NULL);
+		if ( dwSize == INVALID_FILE_SIZE || dwSize == 0 ) {
+			DEBUG_INFO("[-]	Failed to get the DLL file size");
+			break;
+		}
+
+		lpBuffer = HeapAlloc(GetProcessHeap( ), 0, dwSize);
+		if ( !lpBuffer ) {
+			DEBUG_INFO("[-]	Failed to alloc a buffer!");
+			break;
+		}
+
+		if ( ReadFile(hFile, lpBuffer, dwSize, &dwByteRead, NULL) == FALSE ) {
+			DEBUG_INFO("[-]	Failed to read the DLL file");
+			break;
+		}
+
+	} while ( 0 );
+
+	if ( hFile ) {
+		CloseHandle(hFile);
+	}
+
+	return lpBuffer;
+
+}
 
 //拷贝数据到末尾
-VOID	MyCopyBufferToFileEnd(PBYTE	pFileBuffer, DWORD	dwSectionSize, DWORD dwFileSize, PBYTE pCode) {
-	PBYTE pBufferStart = (PBYTE)((ULONG_PTR)pFileBuffer - dwSectionSize + dwFileSize);
+VOID	MyCopyBufferToFileEnd(PBYTE	pFileBuffer, DWORD	dwSectionSize, DWORD dwFileSize, PBYTE pCode)
+{
+	PBYTE pBufferStart = (PBYTE)( (ULONG_PTR)pFileBuffer - dwSectionSize + dwFileSize );
 	memcpy(pBufferStart, pCode, dwSectionSize);
 }
 
@@ -113,10 +159,11 @@ SizeOfRawData = VirtualSize
 //}
 
 //处理文件名
-PCHAR AddFileName(PCHAR pFileName) {
+PCHAR AddFileName(PCHAR pFileName)
+{
 	CHAR FileName[100] = { 0 };
 	CHAR* NewFileName = malloc(100);
-	if (NewFileName == NULL) {
+	if ( NewFileName == NULL ) {
 		return NULL;
 	}
 	memset(NewFileName, 0, 100);
@@ -137,12 +184,13 @@ PCHAR AddFileName(PCHAR pFileName) {
 }
 
 //有80字节空间就正常扩充,另一个函数添加数据
-BOOL AddOneSectionNormal(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
+BOOL AddOneSectionNormal(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize)
+{
 	DWORD	dwStartVirtualAddress = 0;
 	DWORD	dwStartFileAddress = 0;
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
 
-	if (!CalcSectionTableAddress(pDosHeader, &dwStartVirtualAddress, &dwStartFileAddress)) {
+	if ( !CalcSectionTableAddress(pDosHeader, &dwStartVirtualAddress, &dwStartFileAddress) ) {
 		return FALSE;
 	}
 	//初始化
@@ -153,7 +201,7 @@ BOOL AddOneSectionNormal(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 	//拷贝
 	memcpy(pZero, &MySectionHeader, sizeof(IMAGE_SECTION_HEADER));
 	//使后面拥有40个字节的0
-	memset((PBYTE)((ULONG_PTR)pZero + sizeof(IMAGE_SECTION_HEADER)), 0, sizeof(IMAGE_SECTION_HEADER));
+	memset((PBYTE)( (ULONG_PTR)pZero + sizeof(IMAGE_SECTION_HEADER) ), 0, sizeof(IMAGE_SECTION_HEADER));
 
 	//修改PE头中节的数量NumberOfSections
 	//修改SizeOfImage的大小
@@ -173,12 +221,13 @@ BOOL AddOneSectionNormal(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
 修改e_lfanew
 再添加一个段
 */
-BOOL	AddSectionAdvanceNtHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize) {
+BOOL	AddSectionAdvanceNtHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize)
+{
 	DWORD	dwStartVirtualAddress = 0;
 	DWORD	dwStartFileAddress = 0;
-	DWORD	dwSizeOfSectionHeader = GetSizeOfSectionHeader();
+	DWORD	dwSizeOfSectionHeader = GetSizeOfSectionHeader( );
 
-	if (!CalcSectionTableAddress(pDosHeader, &dwStartVirtualAddress, &dwStartFileAddress)) {
+	if ( !CalcSectionTableAddress(pDosHeader, &dwStartVirtualAddress, &dwStartFileAddress) ) {
 		return FALSE;
 	}
 	//初始化
@@ -189,12 +238,12 @@ BOOL	AddSectionAdvanceNtHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize
 
 	//拷贝头部
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
-	DWORD	dwSizeOfMove = GetSizeOfNtHeaders() + GetSizeOfSectionTable(pDosHeader);
-	DWORD	dwSizeOfDos = GetSizeOfDos();
+	DWORD	dwSizeOfMove = GetSizeOfNtHeaders( ) + GetSizeOfSectionTable(pDosHeader);
+	DWORD	dwSizeOfDos = GetSizeOfDos( );
 
-	PIMAGE_NT_HEADERS pNewNtHeader = (PIMAGE_NT_HEADERS)((ULONG_PTR)pDosHeader + dwSizeOfDos);
-	memcpy((PVOID)(pNewNtHeader), pNtHeader, dwSizeOfMove);
-	PBYTE	pNewSection = (PBYTE)((ULONG_PTR)pNewNtHeader + dwSizeOfMove);
+	PIMAGE_NT_HEADERS pNewNtHeader = (PIMAGE_NT_HEADERS)( (ULONG_PTR)pDosHeader + dwSizeOfDos );
+	memcpy((PVOID)( pNewNtHeader ), pNtHeader, dwSizeOfMove);
+	PBYTE	pNewSection = (PBYTE)( (ULONG_PTR)pNewNtHeader + dwSizeOfMove );
 
 	//拷贝新的节表
 	memcpy((PVOID)pNewSection, &MySectionHeader, dwSizeOfSectionHeader);
@@ -216,32 +265,33 @@ BOOL	AddSectionAdvanceNtHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSectionSize
 	return TRUE;
 }
 
-BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
+BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName)
+{
 	PIMAGE_DOS_HEADER pDosHeader = NULL;
 	BOOL bResult = FALSE;
 
 	//文件映射到
 	DWORD dwFileSize = 0;
 	PBYTE pFile = MyReadFile(pFileName, &dwFileSize, dwSectionSize);
-	if (pFile != NULL) {
+	if ( pFile != NULL ) {
 		printf("[+]文件读取成功\n");
 		pDosHeader = (PIMAGE_DOS_HEADER)pFile;
 
-		if (!checkPeAndBit(pDosHeader)) {
+		if ( !checkPeAndBit(pDosHeader) ) {
 			return FALSE;
 		}
 
 		//判断有没有足够的0x50字节的00空间
-		if (JudgeSize(pDosHeader)) {
+		if ( JudgeSize(pDosHeader) ) {
 			printf("[+]有足够的区块表成功\n");
-			if (!AddOneSectionNormal(pDosHeader, dwSectionSize)) {
+			if ( !AddOneSectionNormal(pDosHeader, dwSectionSize) ) {
 				return FALSE;
 			}
 		}
 		else {
 			printf("[-]没有足够的区块表空间\n");
 			printf("[+]将PE头提前\n");
-			if (!AddSectionAdvanceNtHeader(pDosHeader, dwSectionSize)) {
+			if ( !AddSectionAdvanceNtHeader(pDosHeader, dwSectionSize) ) {
 				return FALSE;
 			}
 		}
@@ -250,7 +300,7 @@ BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 
 		//do sth....
 
-		if (MyWriteFile(pDosHeader, dwFileSize, pFileName)) {
+		if ( MyWriteFile(pDosHeader, dwFileSize, pFileName) ) {
 			printf("[+]文件写入成功\n");
 		}
 		else {
@@ -258,7 +308,7 @@ BOOL	AddSection(PCHAR pSectionName, DWORD dwSectionSize, PBYTE pCode, PCHAR pFil
 		}
 	}
 
-	if (pFile != NULL) {
+	if ( pFile != NULL ) {
 		VirtualFree(pFile, 0, MEM_RELEASE);
 	}
 
@@ -276,7 +326,8 @@ SizeOfRawData = VirtualSize = N
 */
 
 //扩大一个节 最后一个节
-BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
+BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName)
+{
 	PIMAGE_DOS_HEADER pDosHeader = NULL;
 	BOOL bResult = FALSE;
 	DWORD dwFileSize = 0;
@@ -284,11 +335,11 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 	PBYTE pFile = MyReadFile(pFileName, &dwFileSize, dwSectionSize);
 
 	do {
-		if (pFile != NULL) {
+		if ( pFile != NULL ) {
 			printf("[+]文件读取成功\n");
 			pDosHeader = (PIMAGE_DOS_HEADER)pFile;
 
-			if (!checkPeAndBit(pDosHeader)) {
+			if ( !checkPeAndBit(pDosHeader) ) {
 				bResult = FALSE;
 				break;
 
@@ -301,7 +352,7 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 			AddSectionAttribute(pLastSectionHeader, IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE);
 			//符合扩大一个节的习惯，修改最后一个节表的SizeOfRawData 和 VirtualSize
 			SetLastSectionRawDataAndVirtualSize(pLastSectionHeader, dwSectionSize);
-			if (!AddSizeOfImage(pDosHeader, dwSectionSize)) {
+			if ( !AddSizeOfImage(pDosHeader, dwSectionSize) ) {
 				bResult = FALSE;
 				break;
 
@@ -309,7 +360,7 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 
 			MyCopyBufferToFileEnd(pFile, dwSectionSize, dwFileSize, pCode);
 
-			if (MyWriteFile(pDosHeader, dwFileSize, pFileName)) {
+			if ( MyWriteFile(pDosHeader, dwFileSize, pFileName) ) {
 				printf("[+]文件写入成功\n");
 				bResult = TRUE;
 			}
@@ -321,9 +372,9 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 		else {
 			return FALSE;
 		}
-	} while (0);
+	} while ( 0 );
 
-	if (pFile != NULL) {
+	if ( pFile != NULL ) {
 		VirtualFree(pFile, 0, MEM_RELEASE);
 	}
 
@@ -331,7 +382,8 @@ BOOL	ExpandSection(DWORD dwSectionSize, PBYTE pCode, PCHAR pFileName) {
 }
 
 //扩大一个节，并添加额外的导入表
-BOOL	ExpandSectionToAddImportTable(PCHAR pFileName, PCHAR pDllName, PCHAR pFuncName) {
+BOOL	ExpandSectionToAddImportTable(PCHAR pFileName, PCHAR pDllName, PCHAR pFuncName)
+{
 	PIMAGE_DOS_HEADER pDosHeader = NULL;
 	BOOL bResult = FALSE;
 	DWORD dwFileSize = 0;
@@ -341,11 +393,11 @@ BOOL	ExpandSectionToAddImportTable(PCHAR pFileName, PCHAR pDllName, PCHAR pFuncN
 	PBYTE pFile = MyReadFile(pFileName, &dwFileSize, dwExpandSize);
 
 	do {
-		if (pFile != NULL) {
+		if ( pFile != NULL ) {
 			printf("[+]文件读取成功\n");
 			pDosHeader = (PIMAGE_DOS_HEADER)pFile;
 
-			if (!checkPeAndBit(pDosHeader)) {
+			if ( !checkPeAndBit(pDosHeader) ) {
 				bResult = FALSE;
 				break;
 
@@ -358,14 +410,14 @@ BOOL	ExpandSectionToAddImportTable(PCHAR pFileName, PCHAR pDllName, PCHAR pFuncN
 			//符合扩大一个节的习惯，修改最后一个节表的SizeOfRawData 和 VirtualSize
 			PIMAGE_SECTION_HEADER pLastSectionHeader = GetXXSectionHeader(pDosHeader, dwNumberOfSection);
 			SetLastSectionRawDataAndVirtualSize(pLastSectionHeader, dwExpandSize);
-			if (!AddSizeOfImage(pDosHeader, dwExpandSize)) {
+			if ( !AddSizeOfImage(pDosHeader, dwExpandSize) ) {
 				bResult = FALSE;
 				break;
 
 			}
 
 			//进行导入表拷贝
-			if (CopyAndAddImportTable(pDosHeader, dwFileSize, dwExpandSize,  pDllName,  pFuncName)) {
+			if ( CopyAndAddImportTable(pDosHeader, dwFileSize, dwExpandSize, pDllName, pFuncName) ) {
 				printf("[+]文件导入表修改成功\n");
 			}
 			else {
@@ -377,7 +429,7 @@ BOOL	ExpandSectionToAddImportTable(PCHAR pFileName, PCHAR pDllName, PCHAR pFuncN
 
 			//MyCopyBufferToFileEnd(pFile, dwSectionSize, dwFileSize, pCode);
 
-			if (MyWriteFile(pDosHeader, dwFileSize, pFileName)) {
+			if ( MyWriteFile(pDosHeader, dwFileSize, pFileName) ) {
 				printf("[+]文件写入成功\n");
 				bResult = TRUE;
 			}
@@ -389,9 +441,9 @@ BOOL	ExpandSectionToAddImportTable(PCHAR pFileName, PCHAR pDllName, PCHAR pFuncN
 		else {
 			return FALSE;
 		}
-	} while (0);
+	} while ( 0 );
 
-	if (pFile != NULL) {
+	if ( pFile != NULL ) {
 		VirtualFree(pFile, 0, MEM_RELEASE);
 	}
 
@@ -399,7 +451,8 @@ BOOL	ExpandSectionToAddImportTable(PCHAR pFileName, PCHAR pDllName, PCHAR pFuncN
 }
 
 //合并成一个节
-BOOL	MergeOneSection(PCHAR pFileName, DWORD dwSectionSize) {
+BOOL	MergeOneSection(PCHAR pFileName, DWORD dwSectionSize)
+{
 	PIMAGE_DOS_HEADER pDosHeader = NULL;
 	BOOL bResult = FALSE;
 	DWORD dwFileSize = 0;
@@ -408,17 +461,17 @@ BOOL	MergeOneSection(PCHAR pFileName, DWORD dwSectionSize) {
 
 	PBYTE pMemory = NULL;
 	do {
-		if (pFile != NULL) {
+		if ( pFile != NULL ) {
 			printf("[+]文件读取成功\n");
 			pDosHeader = (PIMAGE_DOS_HEADER)pFile;
 
-			if (!checkPeAndBit(pDosHeader)) {
+			if ( !checkPeAndBit(pDosHeader) ) {
 				bResult = FALSE;
 				break;
 			}
 
 			pMemory = StretchFileToMemory(pDosHeader, &dwFileSize);
-			if (pMemory == NULL) {
+			if ( pMemory == NULL ) {
 				DEBUG_INFO("[-]文件拉伸到内存失败");
 				bResult = FALSE;
 				break;
@@ -431,7 +484,7 @@ BOOL	MergeOneSection(PCHAR pFileName, DWORD dwSectionSize) {
 			//修改节属性
 			//获取节的属性
 			INT Characteristics = 0;
-			for (int i = 1; i <= GetNumberOfSection(pMemory); i++) {
+			for ( int i = 1; i <= GetNumberOfSection(pMemory); i++ ) {
 				Characteristics |= GetSectionCharacteristics(pMemory, i);
 			}
 			SetSectionCharacteristics(pMemory, 1, Characteristics);
@@ -439,7 +492,7 @@ BOOL	MergeOneSection(PCHAR pFileName, DWORD dwSectionSize) {
 			//修改NumberOfSections
 			SetNumberOfSections(pMemory, 1);
 
-			if (MyWriteFile(pMemory, dwFileSize, pFileName)) {
+			if ( MyWriteFile(pMemory, dwFileSize, pFileName) ) {
 				printf("[+]文件写入成功\n");
 				bResult = TRUE;
 			}
@@ -452,13 +505,117 @@ BOOL	MergeOneSection(PCHAR pFileName, DWORD dwSectionSize) {
 			bResult = FALSE;
 			break;
 		}
-	} while (0);
+	} while ( 0 );
 
-	if (pMemory != NULL) {
+	if ( pMemory != NULL ) {
 		VirtualFree(pMemory, 0, MEM_RELEASE);
 	}
-	if (pFile != NULL) {
+	if ( pFile != NULL ) {
 		VirtualFree(pFile, 0, MEM_RELEASE);
 	}
 	return bResult;
 }
+
+
+//为OpenProcess提升权限 
+//“SeDebugPrivilege”表示该特权可用于调试及更改其它进程的内存
+BOOL AdvancePrivilege2Debug( )
+{
+	HANDLE  hToken = NULL;
+	HANDLE	hProcess = NULL;
+	TOKEN_PRIVILEGES priv = { 0 };
+
+	if ( OpenProcessToken(GetCurrentProcess( ), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken) ) {
+		priv.PrivilegeCount = 1;
+		priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+		//查询并应用
+		if ( LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &priv.Privileges[0].Luid) )
+			return AdjustTokenPrivileges(hToken, FALSE, &priv, 0, NULL, NULL);
+
+		CloseHandle(hToken);
+	}
+	return FALSE;
+}
+
+
+//打开进程 注入DLL
+VOID InjectDLL(DWORD dwProcessId, LPVOID lpBuffer, DWORD dwLength, PCHAR pFuncName,LPVOID lpParameter)
+{
+	HANDLE hProcess = NULL;
+	HMODULE hModule = NULL;
+
+	do
+	{
+		hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, dwProcessId);
+		if ( !hProcess ) {
+			DEBUG_INFO("[-] Failed to open the target process");
+			break;
+		}
+
+		hModule = LoadRemoteLibraryR(hProcess, lpBuffer, dwLength, NULL, pFuncName);
+		if ( !hModule ) {
+			DEBUG_INFO("[-] Failed to inject the DLL");
+			break;
+		}
+
+		WaitForSingleObject(hModule, -1);
+	} while ( 0 );
+
+	if ( hProcess )
+		CloseHandle(hProcess);
+
+	return;
+
+}
+
+//获取反射注入的函数地址并进行调用
+HANDLE	WINAPI LoadRemoteLibraryR(HANDLE hProcess, LPVOID lpBuffer, DWORD dwLength, LPVOID lpParameter,PCHAR pFuncName)
+{
+	HANDLE hThread = NULL;
+	LPTHREAD_START_ROUTINE lpReflectiveLoader = NULL;
+	LPVOID lpRemoteLibraryBuffer = NULL;
+	DWORD dwReflectiveLoaderOffset = 0;
+	DWORD dwThreadId = 0;
+
+	__try {
+		do
+		{
+			if ( !hProcess || !lpBuffer || !dwLength )
+				break;
+
+			//获取导出函数ReflectiveLoader的地址
+
+			dwReflectiveLoaderOffset = GetFileExportFunctionOffset(lpBuffer, pFuncName);
+			if ( !dwReflectiveLoaderOffset )
+				break;
+
+			//申请可写可执行空间，写入文件，并创建远程线程执行
+			//lpRemoteLibraryBuffer = VirtualAllocEx(hProcess, NULL, dwLength, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+			lpRemoteLibraryBuffer = VirtualAlloc(NULL, dwLength, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+			if ( !lpRemoteLibraryBuffer )
+				break;
+
+			if ( !WriteProcessMemory(hProcess, lpRemoteLibraryBuffer, lpBuffer, dwLength, NULL) )
+				break;
+
+			// add the offset to ReflectiveLoader() to the remote library address...
+			lpReflectiveLoader = (LPTHREAD_START_ROUTINE)( (ULONG_PTR)lpRemoteLibraryBuffer + dwReflectiveLoaderOffset );
+
+			// 创建远程线程 调用ReflectiveLoader函数
+			//((LOAD)lpReflectiveLoader)( );
+			hThread = CreateRemoteThread(hProcess, NULL, 1024 * 1024, lpReflectiveLoader, lpParameter, (DWORD)NULL, &dwThreadId);
+
+			//hThread = CreateThread(NULL, 1024 * 1024, lpReflectiveLoader, NULL, (DWORD)NULL, &dwThreadId);
+
+
+		} while ( 0 );
+
+	}
+	__except ( EXCEPTION_EXECUTE_HANDLER )
+	{
+		hThread = NULL;
+	}
+	return hThread;
+}
+

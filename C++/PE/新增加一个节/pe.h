@@ -1,6 +1,9 @@
 #pragma once
 #include"_global.h"
 
+//不向DllMain传入参数
+#define	REFLECTIVELOADER_NO_PARAMETER
+
 #define DEREF( name )*(UINT_PTR *)(name)
 #define DEREF_DWORD( name )*(UINT_PTR *)(name)
 #define DEREF_ULONGPTR( name )*(ULONG_PTR *)(name)
@@ -8,6 +11,7 @@
 
 typedef FARPROC(WINAPI* GETPROCADDRESS)( HMODULE, LPCSTR );
 typedef HMODULE(WINAPI* LOADLIBRARY)( LPCWSTR );
+typedef VOID (WINAPI* LOAD)( VOID );
 
 //重定位块 四字节 由4位的Type与12位的Offset合成
 typedef struct {
@@ -42,7 +46,7 @@ DWORD GetSizeOfSectionHeader( );
 //获取DOS+DOS_Stub
 DWORD	GetSizeOfDosAndStub(PIMAGE_DOS_HEADER pDosHeader);
 //获取Dos头大小
-DWORD	GetSizeOfDos( );
+inline DWORD	GetSizeOfDos( );
 //取模判断大小
 DWORD   GetStartAddress(DWORD	dwAlignment, DWORD	dwSize, DWORD	dwAddress);
 //获取对齐大小
@@ -56,7 +60,7 @@ typedef struct {
 VOID GetAlignment(PIMAGE_DOS_HEADER	pDosHeader, PPEALIGNMENT pPeAlignment);
 
 //获取节表数
-DWORD	GetNumberOfSection(PIMAGE_DOS_HEADER	pDosHeader);
+inline DWORD	GetNumberOfSection(PIMAGE_DOS_HEADER	pDosHeader);
 //获取第几个节表
 PIMAGE_SECTION_HEADER	GetXXSectionHeader(PIMAGE_DOS_HEADER pDosHeader, DWORD dwSerial);
 //获取节表属性
@@ -119,3 +123,6 @@ VOID ShellCodeRepairImportTable (
 
 //ShellCode处理重定位
 VOID	ShellCodeFixReloc(PIMAGE_DOS_HEADER	pMemory, PIMAGE_DOS_HEADER pDosHeader);
+
+//ShellCode 搜寻未展开导出表函数
+DWORD	GetFileExportFunctionOffset(PIMAGE_DOS_HEADER	pDosHeader, PCHAR pFuncName);

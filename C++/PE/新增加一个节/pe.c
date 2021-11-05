@@ -44,6 +44,7 @@ DWORD OffsetToRVA (PIMAGE_DOS_HEADER pDosHeader, ULONG uOffsetAddr)
 //判断PE文件
 BOOL	IsPE (PIMAGE_DOS_HEADER pDosHeader)
 {
+
 	BOOL bResult = FALSE;
 	DWORD	dwSizeOfDos = pDosHeader->e_lfanew;
 	if ( pDosHeader->e_magic == IMAGE_DOS_SIGNATURE ) {
@@ -260,7 +261,7 @@ DWORD	GetSizeOfDosAndStub (PIMAGE_DOS_HEADER pDosHeader)
 	return pDosHeader->e_lfanew;
 }
 
-DWORD	GetSizeOfDos ( )
+inline  DWORD	GetSizeOfDos ( )
 {
 	return sizeof (IMAGE_DOS_HEADER);
 }
@@ -272,7 +273,7 @@ DWORD GetSizeOfSectionHeader ( )
 }
 
 //获取节表数
-DWORD	GetNumberOfSection (PIMAGE_DOS_HEADER	pDosHeader)
+inline DWORD	GetNumberOfSection (PIMAGE_DOS_HEADER	pDosHeader)
 {
 	return GetNtHeader (pDosHeader)->FileHeader.NumberOfSections;
 }
@@ -596,4 +597,71 @@ VOID	ShellCodeFixReloc(PIMAGE_DOS_HEADER	pMemory, PIMAGE_DOS_HEADER pDosHeader)
 		//多个区块成线性排列
 		uiMemVa += sizeof(IMAGE_BASE_RELOCATION);
 	}
+}
+
+//ShellCode 搜寻未展开导出表函数
+DWORD	GetFileExportFunctionOffset(PIMAGE_DOS_HEADER	pDosHeader, PCHAR pFuncName)
+{
+
+	ULONG_PTR uiRva = 0;
+	DWORD dwCounter = 0;
+
+	PIMAGE_EXPORT_DIRECTORY pExportDirect = NULL;
+	PDWORD pEAT = NULL;
+	PDWORD pENT = NULL;
+	PWORD pEOT = NULL;
+	//校验版本
+#ifdef _WIN64
+	DWORD dwCompiledArch = 2;
+#else
+	// This will catch Win32 and WinRT.
+	DWORD dwCompiledArch = 1;
+#endif
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader(pDosHeader);
+
+	if ( pNtHeader->OptionalHeader.Magic == 0x010B ) // PE32
+	{
+		if ( dwCompiledArch != 1 )
+			return 0;
+	}
+	else if ( pNtHeader->OptionalHeader.Magic == 0x020B ) // PE64
+	{
+		if ( dwCompiledArch != 2 )
+			return 0;
+	}
+	else
+	{
+		return 0;
+	}
+	uiRva = GetDataDirectoryRVA(pDosHeader, IMAGE_DIRECTORY_ENTRY_EXPORT);
+
+	//指向文件偏移的导出表
+	pExportDirect = (PIMAGE_EXPORT_DIRECTORY)( (ULONG_PTR)pDosHeader + RVAToOffset(pDosHeader, uiRva) );
+
+	//指向EAT，DWORD数组
+	pEAT = (PDWORD)( (ULONG_PTR)pDosHeader + RVAToOffset(pDosHeader, pExportDirect->AddressOfFunctions) );
+
+	//指向ENT，DOWRD数组
+	pENT = (PDWORD)( (ULONG_PTR)pDosHeader + RVAToOffset(pDosHeader, pExportDirect->AddressOfNames) );
+
+	//指向EOT，WORD数组
+	pEOT = (PWORD)( (ULONG_PTR)pDosHeader + RVAToOffset(pDosHeader, pExportDirect->AddressOfNameOrdinals) );
+
+	dwCounter = pExportDirect->NumberOfNames;
+
+	while ( dwCounter-- ) {
+		PCHAR ExportFunctionName = (PCHAR)( (ULONG_PTR)pDosHeader + RVAToOffset(pDosHeader ,*pENT) );
+
+		if ( strstr(ExportFunctionName, pFuncName) != NULL ) {
+			pEAT += *pEOT;
+
+			return RVAToOffset(pDosHeader ,*pEAT );
+		}
+		pENT++;
+		pEOT++;
+
+	}
+
+	return 0;
+
 }

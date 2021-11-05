@@ -82,6 +82,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\..\..\bin\</OutDir>
+    <TargetName>$(ProjectName).Release</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -141,7 +143,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\PE\新增加一个节\pe.c" />
+    <ClCompile Include="..\..\..\PE\新增加一个节\_global.c" />
     <ClCompile Include="Inject.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\PE\新增加一个节\pe.h" />
+    <ClInclude Include="..\..\..\PE\新增加一个节\_global.h" />
+    <ClInclude Include="..\ReflectiveLoader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
