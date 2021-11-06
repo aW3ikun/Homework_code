@@ -5,9 +5,9 @@
 #define	REFLECTIVELOADER_NO_PARAMETER
 
 #define DEREF( name )*(UINT_PTR *)(name)
-#define DEREF_DWORD( name )*(UINT_PTR *)(name)
+#define DEREF_DWORD( name )*(DWORD *)(name)
 #define DEREF_ULONGPTR( name )*(ULONG_PTR *)(name)
-#define DEREF_WORD( name )*(ULONG_PTR *)(name)
+#define DEREF_WORD( name )*(WORD *)(name)
 
 typedef FARPROC(WINAPI* GETPROCADDRESS)( HMODULE, LPCSTR );
 typedef HMODULE(WINAPI* LOADLIBRARY)( LPCWSTR );

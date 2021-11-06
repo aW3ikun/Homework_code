@@ -30,7 +30,8 @@ DLLEXPORT	ULONG_PTR	WINAPI ReflectiveLoader(LPVOID	lpParameter)
 	//__debugbreak( );
 	//PE头部
 	ULONG_PTR uiDosHeader;
-	DWORD	dwSizeOfHeader;
+	ULONG_PTR	uiSizeOfHeader;
+	ULONG_PTR uiNumberOfSection;
 	//获取Caller函数地址后,内存向上搜寻IMAGE_DOS_HEADER,定位文件位置
 	ULONG_PTR uiBaseAddr;
 	ULONG_PTR uiNtHeader;
@@ -39,9 +40,9 @@ DLLEXPORT	ULONG_PTR	WINAPI ReflectiveLoader(LPVOID	lpParameter)
 
 	ULONG_PTR uiHeaderValue;
 
-	ULONG_PTR dwSizeOfRawData;
-	ULONG_PTR dwVirtualAddress;
-	ULONG_PTR dwPointerToRawData;
+	ULONG_PTR uiSizeOfRawData;
+	ULONG_PTR uiVirtualAddress;
+	ULONG_PTR uiPointerToRawData;
 
 	//定义函数指针
 	VIRTUALALLOC pVirtualAlloc = NULL;
@@ -49,6 +50,10 @@ DLLEXPORT	ULONG_PTR	WINAPI ReflectiveLoader(LPVOID	lpParameter)
 	LOADLIBRARY	pLoadLibrary = NULL;
 	//用来刷新指令
 	NTFLUSHINSTRUCTIONCACHE pNtFlushInstructionCache = NULL;
+	//临时变量
+
+	ULONG_PTR uiValueA;
+	ULONG_PTR uiValueB;
 
 	//step0 获取Dos头部	
 	uiBaseAddr = ReturnFuncAddres( );
@@ -72,6 +77,9 @@ DLLEXPORT	ULONG_PTR	WINAPI ReflectiveLoader(LPVOID	lpParameter)
 	uiDosHeader = uiBaseAddr;
 
 	//step1 获取shellcode处理所需的必要函数
+	//=================================
+	// 优化(优选速度) (/Ox)
+	//=================================
 	pVirtualAlloc = GetFunction(KERNEL32DLL_HASH, VIRTUALALLOC_HASH);
 	pGetProcAddress = GetFunction(KERNEL32DLL_HASH, GETPROCADDRESS_HASH);
 	pLoadLibrary = GetFunction(KERNEL32DLL_HASH, LOADLIBRARYA_HASH);
@@ -80,7 +88,7 @@ DLLEXPORT	ULONG_PTR	WINAPI ReflectiveLoader(LPVOID	lpParameter)
 	//获取Nt头部
 
 	uiNtHeader = (ULONG_PTR)GetNtHeader((PIMAGE_DOS_HEADER)uiDosHeader);
-	uiImageSize = (ULONG_PTR)( (PIMAGE_NT_HEADERS)uiNtHeader )->OptionalHeader.SizeOfImage;
+	uiImageSize = (ULONG_PTR)( ( (PIMAGE_NT_HEADERS)uiNtHeader )->OptionalHeader.SizeOfImage );
 
 	//申请空间
 	uiBaseAddr = (ULONG_PTR)pVirtualAlloc(NULL, uiImageSize, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
@@ -88,36 +96,40 @@ DLLEXPORT	ULONG_PTR	WINAPI ReflectiveLoader(LPVOID	lpParameter)
 	//拷贝
 	//CopyHeader((LPVOID)uiBaseAddr, uiDosHeader);
 
-	dwSizeOfHeader = (DWORD)( ( (PIMAGE_NT_HEADERS)uiNtHeader )->OptionalHeader.SizeOfHeaders );
+	uiSizeOfHeader = (ULONG_PTR)( ( (PIMAGE_NT_HEADERS)uiNtHeader )->OptionalHeader.SizeOfHeaders );
 	//CopyMemory(pDst, pDosHeader, dwSizeOfHeader);
-	while ( dwSizeOfHeader-- )
-		*( (BYTE*)uiBaseAddr )++ = *( (BYTE*)uiDosHeader )++;
+	uiValueA = uiBaseAddr;
+	uiValueB = uiDosHeader;
+	while ( uiSizeOfHeader-- )
+		*(BYTE*)uiValueA++ = *(BYTE*)uiValueB++;
+
 
 	//step3 拷贝区块
 	//CopyAllSection((LPVOID)uiBaseAddr, (PIMAGE_DOS_HEADER)uiDosHeader, uiImageSize);
 
-	PIMAGE_SECTION_HEADER pSection = IMAGE_FIRST_SECTION ((PIMAGE_NT_HEADERS)uiNtHeader);
-	PIMAGE_SECTION_HEADER pFirstSection = pSection;
-	DWORD dwNumberOfSection = ( (PIMAGE_NT_HEADERS)uiNtHeader )->FileHeader.NumberOfSections;
+	PIMAGE_SECTION_HEADER pFirstSection = IMAGE_FIRST_SECTION ((PIMAGE_NT_HEADERS)uiNtHeader);
 
-	while ( dwNumberOfSection-- )
+	uiNumberOfSection = ( (PIMAGE_NT_HEADERS)uiNtHeader )->FileHeader.NumberOfSections;
+
+	while ( uiNumberOfSection-- )
 	{
 
 		// uiValueB is the VA for this section
-		dwVirtualAddress = ( uiBaseAddr + pFirstSection->VirtualAddress );
+
+		uiVirtualAddress = ( uiBaseAddr + pFirstSection->VirtualAddress );
 
 		// uiValueC if the VA for this sections data
-		dwPointerToRawData = ( uiDosHeader + pFirstSection->PointerToRawData );
+		uiPointerToRawData = ( uiDosHeader + pFirstSection->PointerToRawData );
 
 		// copy the section over
-		dwSizeOfRawData = (pFirstSection->SizeOfRawData) -1;
-			//while ( --dwSizeOfRawData )
-			//	*( (BYTE*)dwVirtualAddress )++ = *( (BYTE*)dwPointerToRawData )++;
-		while ( dwSizeOfRawData-- )
-			*(BYTE*)dwVirtualAddress++ = *(BYTE*)dwPointerToRawData++;
+		uiSizeOfRawData = pFirstSection->SizeOfRawData;
+		//while ( --dwSizeOfRawData )
+		//	*( (BYTE*)dwVirtualAddress )++ = *( (BYTE*)dwPointerToRawData )++;
+		while ( uiSizeOfRawData-- )
+			*(BYTE*)uiVirtualAddress++ = *(BYTE*)uiPointerToRawData++;
 
 		// get the VA of the next section
-		pFirstSection++;
+		pFirstSection = (PIMAGE_SECTION_HEADER)( (ULONG_PTR)pFirstSection + sizeof(IMAGE_SECTION_HEADER) );
 	}
 
 	//for ( int i = 0; i < dwNumberOfSection; i++ ) {

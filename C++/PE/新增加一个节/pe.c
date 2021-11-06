@@ -504,7 +504,8 @@ VOID ShellCodeRepairImportTable (
 	//遍历导入表
 	while ( ( (PIMAGE_IMPORT_DESCRIPTOR)uiImportTable )->Name ) {
 		//载入名称指向的DLL
-		uiLibraryAddr = (ULONG_PTR)pLoadLibrary (( (PIMAGE_IMPORT_DESCRIPTOR)uiImportTable )->Name);
+
+		uiLibraryAddr = (ULONG_PTR)pLoadLibrary ((LPCSTR)( (ULONG_PTR)pDosHeader + ( (PIMAGE_IMPORT_DESCRIPTOR)uiImportTable )->Name ));
 
 		//获取导入表的INT表
 		uiImportINT = (ULONG_PTR)pDosHeader + ( (PIMAGE_IMPORT_DESCRIPTOR)uiImportTable )->OriginalFirstThunk;
@@ -531,9 +532,9 @@ VOID ShellCodeRepairImportTable (
 			}
 			else {
 				//访问IMAGE_IMPORT_BY_NAME获取函数名字
-				uiImportByName = ( pDosHeader + DEREF(uiImportIAT) );
+				uiImportByName = ( (ULONG_PTR)pDosHeader + DEREF(uiImportIAT) );
 
-				DEREF(uiImportIAT) = (ULONG_PTR)pGetProcAddress((HMODULE)uiLibraryAddr, (LPCSTR)( ( (PIMAGE_IMPORT_BY_NAME)( uiImportByName ) )->Name ));
+				DEREF(uiImportIAT) = (ULONG_PTR)pGetProcAddress((HMODULE)uiLibraryAddr, (LPCSTR)( ( (PIMAGE_IMPORT_BY_NAME)uiImportByName ) )->Name);
 			}
 			uiImportIAT += sizeof(ULONG_PTR);
 			if ( uiImportINT )
@@ -546,6 +547,11 @@ VOID ShellCodeRepairImportTable (
 
 
 }
+//=================================================
+//最大优化(优选大小) (/O1)
+// 只适用于 __inline (/Ob1)
+//=================================================
+
 
 //ShellCode处理重定位
 VOID	ShellCodeFixReloc(PIMAGE_DOS_HEADER	pMemory, PIMAGE_DOS_HEADER pDosHeader)
@@ -564,38 +570,43 @@ VOID	ShellCodeFixReloc(PIMAGE_DOS_HEADER	pMemory, PIMAGE_DOS_HEADER pDosHeader)
 
 	//计算差值
 	uiValue = (LONG_PTR)pMemory - GetNtHeader(pDosHeader)->OptionalHeader.ImageBase;
-
-	if ( uiRva = (ULONG_PTR)GetDataDirectoryRVA(pMemory, IMAGE_DIRECTORY_ENTRY_BASERELOC) ) {
+	if ( uiRva = (ULONG_PTR)GetDataDirectoryRVA(pMemory, IMAGE_DIRECTORY_ENTRY_BASERELOC) )
+	{
 		uiReloc = (ULONG_PTR)pMemory + uiRva;
 
 		//遍历所有区块
-		while ( ( (PIMAGE_BASE_RELOCATION)uiReloc )->SizeOfBlock ) {
+		while ( ( (PIMAGE_BASE_RELOCATION)uiReloc )->SizeOfBlock ) 
+		{
 			//定位块开头
 			uiMemVa = (ULONG_PTR)pMemory + (ULONG_PTR)( ( (PIMAGE_BASE_RELOCATION)uiReloc )->VirtualAddress );
 
 			//获取块数量
-			uiBlockNum = (ULONG_PTR)( ( (PIMAGE_BASE_RELOCATION)uiReloc )->SizeOfBlock ) - sizeof(IMAGE_BASE_RELOCATION) / sizeof(IMAGE_RELOC);
+			uiBlockNum = (ULONG_PTR)(( ( (PIMAGE_BASE_RELOCATION)uiReloc )->SizeOfBlock ) - sizeof(IMAGE_BASE_RELOCATION) / sizeof(IMAGE_RELOC));
 
 			//定位一个块
 			uiBlock = uiReloc + sizeof(IMAGE_BASE_RELOCATION);
 
 			//VirtualAddress(1000) + Offset(420) = 1420(RVA)
 			//再加上ImageBase
+			
 			while ( uiBlockNum-- ) {
-				if ( ( (PIMAGE_RELOC)uiBlock )->offset == IMAGE_REL_BASED_DIR64 )
+				if ( ( (PIMAGE_RELOC)uiBlock )->type == IMAGE_REL_BASED_DIR64 )
 					DEREF_ULONGPTR(uiMemVa + ( (PIMAGE_RELOC)uiBlock )->offset) += uiValue;
-				if ( ( (PIMAGE_RELOC)uiBlock )->offset == IMAGE_REL_BASED_HIGHLOW )
+				else if ( ( (PIMAGE_RELOC)uiBlock )->type == IMAGE_REL_BASED_HIGHLOW )
 					DEREF_DWORD(uiMemVa + ( (PIMAGE_RELOC)uiBlock )->offset) += (DWORD)uiValue;
-				if ( ( (PIMAGE_RELOC)uiBlock )->offset == IMAGE_REL_BASED_HIGH )
+				else if ( ( (PIMAGE_RELOC)uiBlock )->type == IMAGE_REL_BASED_HIGH )
 					DEREF_WORD(uiMemVa + ( (PIMAGE_RELOC)uiBlock )->offset) += HIWORD(uiValue);
-				if ( ( (PIMAGE_RELOC)uiBlock )->offset == IMAGE_REL_BASED_LOW )
+				else if ( ( (PIMAGE_RELOC)uiBlock )->type == IMAGE_REL_BASED_LOW )
 					DEREF_WORD(uiMemVa + ( (PIMAGE_RELOC)uiBlock )->offset) += LOWORD (uiValue);
+
+				uiBlock += sizeof(IMAGE_RELOC);
 			}
 
-			uiBlock += sizeof(IMAGE_RELOC);
+
+			//多个区块成线性排列
+			uiReloc += (ULONG_PTR)( ( (PIMAGE_BASE_RELOCATION)uiReloc )->SizeOfBlock );
 		}
-		//多个区块成线性排列
-		uiMemVa += sizeof(IMAGE_BASE_RELOCATION);
+
 	}
 }
 
@@ -650,12 +661,12 @@ DWORD	GetFileExportFunctionOffset(PIMAGE_DOS_HEADER	pDosHeader, PCHAR pFuncName)
 	dwCounter = pExportDirect->NumberOfNames;
 
 	while ( dwCounter-- ) {
-		PCHAR ExportFunctionName = (PCHAR)( (ULONG_PTR)pDosHeader + RVAToOffset(pDosHeader ,*pENT) );
+		PCHAR ExportFunctionName = (PCHAR)( (ULONG_PTR)pDosHeader + RVAToOffset(pDosHeader, *pENT) );
 
 		if ( strstr(ExportFunctionName, pFuncName) != NULL ) {
 			pEAT += *pEOT;
 
-			return RVAToOffset(pDosHeader ,*pEAT );
+			return RVAToOffset(pDosHeader, *pEAT);
 		}
 		pENT++;
 		pEOT++;

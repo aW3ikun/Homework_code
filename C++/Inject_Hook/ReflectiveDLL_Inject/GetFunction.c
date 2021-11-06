@@ -17,7 +17,7 @@ __forceinline DWORD hash(char* c) {
 }
 
 //获取peb地址
-ULONG_PTR GetPeb() {
+inline ULONG_PTR GetPeb() {
 #ifdef _WIN64
 	return  (ULONG_PTR)__readgsqword(0x60);
 #else
@@ -26,12 +26,12 @@ ULONG_PTR GetPeb() {
 }
 
 //获取Ldr地址
-ULONG_PTR GetLdr(ULONG_PTR uiPebAddr) {
+inline ULONG_PTR GetLdr(ULONG_PTR uiPebAddr) {
 	return (ULONG_PTR)(((PPEB)uiPebAddr)->Ldr);
 }
 
 //全部转为大写，然后hash计算
-VOID ComputeHash(ULONG_PTR	uiDllName, ULONG_PTR	uiDllLength, PDWORD	uiDllHash) {
+inline VOID ComputeHash(ULONG_PTR	uiDllName, ULONG_PTR	uiDllLength, PDWORD	uiDllHash) {
 	if (uiDllName == NULL)
 		return;
 	do {

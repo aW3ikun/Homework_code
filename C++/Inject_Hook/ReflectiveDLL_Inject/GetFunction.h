@@ -99,12 +99,12 @@ __forceinline DWORD hash(DWORD d);
 ULONG_PTR GetFunction(DWORD dwDllHash, DWORD dwFuncHashz);
 
 //获取peb地址
-ULONG_PTR GetPeb();
+inline ULONG_PTR GetPeb();
 
 //获取Ldr地址
-ULONG_PTR GetLdr(ULONG_PTR uiPebAddr);
+inline ULONG_PTR GetLdr(ULONG_PTR uiPebAddr);
 
 //全部转为小写，然后hash计算
-VOID ComputeHash(ULONG_PTR	uiDllName, ULONG_PTR	uiDllLength, PDWORD	uiDllHash);
+inline VOID ComputeHash(ULONG_PTR	uiDllName, ULONG_PTR	uiDllLength, PDWORD	uiDllHash);
 
 #endif

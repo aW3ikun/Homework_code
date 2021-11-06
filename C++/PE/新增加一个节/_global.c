@@ -80,7 +80,7 @@ BOOL	MyWriteFile(PBYTE pFileBuffer, DWORD FileSize, PCHAR pFileName)
 	return bResult;
 }
 //使用堆Heap读取文件
-LPVOID	HeapReadFile(PCHAR pFileName,PDWORD	pFileSize)
+LPVOID	HeapReadFile(PCHAR pFileName, PDWORD	pFileSize)
 {
 	HANDLE	hFile = NULL;
 	LPVOID	lpBuffer = NULL;
@@ -540,7 +540,8 @@ BOOL AdvancePrivilege2Debug( )
 
 
 //打开进程 注入DLL
-VOID InjectDLL(DWORD dwProcessId, LPVOID lpBuffer, DWORD dwLength, PCHAR pFuncName,LPVOID lpParameter)
+//FALSE获取句柄
+VOID InjectDLL(DWORD dwProcessId, LPVOID lpBuffer, DWORD dwLength, PCHAR pFuncName, LPVOID lpParameter, BOOL	bFlag)
 {
 	HANDLE hProcess = NULL;
 	HMODULE hModule = NULL;
@@ -552,14 +553,26 @@ VOID InjectDLL(DWORD dwProcessId, LPVOID lpBuffer, DWORD dwLength, PCHAR pFuncNa
 			DEBUG_INFO("[-] Failed to open the target process");
 			break;
 		}
-
-		hModule = LoadRemoteLibraryR(hProcess, lpBuffer, dwLength, NULL, pFuncName);
-		if ( !hModule ) {
-			DEBUG_INFO("[-] Failed to inject the DLL");
-			break;
+		if ( bFlag ) {
+			hModule = LoadRemoteLibraryR(hProcess, lpBuffer, dwLength, NULL, pFuncName);
+			if ( !hModule ) {
+				DEBUG_INFO("[-] Failed to inject the DLL");
+				break;
+			}
+			WaitForSingleObject(hModule, -1);
+		}
+		else {
+			hModule = LoadLibraryR(lpBuffer, dwLength, pFuncName);
+			if ( !hModule ) {
+				DEBUG_INFO("[-] Failed to inject the DLL");
+				break;
+			}
+			
+			printf("[+] DLL地址：0x%p\n", hModule);
 		}
 
-		WaitForSingleObject(hModule, -1);
+
+
 	} while ( 0 );
 
 	if ( hProcess )
@@ -569,8 +582,8 @@ VOID InjectDLL(DWORD dwProcessId, LPVOID lpBuffer, DWORD dwLength, PCHAR pFuncNa
 
 }
 
-//获取反射注入的函数地址并进行调用
-HANDLE	WINAPI LoadRemoteLibraryR(HANDLE hProcess, LPVOID lpBuffer, DWORD dwLength, LPVOID lpParameter,PCHAR pFuncName)
+//获取反射注入的函数地址并进行调用,返回线程
+HANDLE	WINAPI LoadRemoteLibraryR(HANDLE hProcess, LPVOID lpBuffer, DWORD dwLength, LPVOID lpParameter, PCHAR pFuncName)
 {
 	HANDLE hThread = NULL;
 	LPTHREAD_START_ROUTINE lpReflectiveLoader = NULL;
@@ -619,3 +632,49 @@ HANDLE	WINAPI LoadRemoteLibraryR(HANDLE hProcess, LPVOID lpBuffer, DWORD dwLengt
 	return hThread;
 }
 
+
+//调用DLL 获取DLL的句柄
+HMODULE WINAPI LoadLibraryR(LPVOID lpBuffer, DWORD dwLength, PCHAR pFuncName)
+{
+	HMODULE hResult = NULL;
+	DWORD dwReflectiveLoaderOffset = 0;
+	DWORD dwOldProtect1 = 0;
+	DWORD dwOldProtect2 = 0;
+	REFLECTIVELOADER pReflectiveLoader = NULL;
+	DLLMAIN pDllMain = NULL;
+
+	if ( lpBuffer == NULL || dwLength == 0 )
+		return NULL;
+
+	__try
+	{
+		// check if the library has a ReflectiveLoader...
+		dwReflectiveLoaderOffset = GetFileExportFunctionOffset(lpBuffer, pFuncName);
+		if ( dwReflectiveLoaderOffset != 0 )
+		{
+			pReflectiveLoader = (REFLECTIVELOADER)( (UINT_PTR)lpBuffer + dwReflectiveLoaderOffset );
+
+			// we must VirtualProtect the buffer to RWX so we can execute the ReflectiveLoader...
+			// this assumes lpBuffer is the base address of the region of pages and dwLength the size of the region
+			if ( VirtualProtect(lpBuffer, dwLength, PAGE_EXECUTE_READWRITE, &dwOldProtect1) )
+			{
+				// call the librarys ReflectiveLoader...
+				pDllMain = (DLLMAIN)pReflectiveLoader( );
+				if ( pDllMain != NULL )
+				{
+					// call the loaded librarys DllMain to get its HMODULE
+					if ( !pDllMain(NULL, DLL_QUERY_HMODULE, &hResult) )
+						hResult = NULL;
+				}
+				// revert to the previous protection flags...
+				VirtualProtect(lpBuffer, dwLength, dwOldProtect1, &dwOldProtect2);
+			}
+		}
+	}
+	__except ( EXCEPTION_EXECUTE_HANDLER )
+	{
+		hResult = NULL;
+	}
+
+	return hResult;
+}

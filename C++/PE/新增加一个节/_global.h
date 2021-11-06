@@ -6,15 +6,19 @@
 #define DEREF( name )*(UINT_PTR *)(name)
 #define DEREF_32( name )*(DWORD *)(name)
 #define DEREF_16( name )*(WORD *)(name)
+#define DLL_QUERY_HMODULE		6
 
 //替换函数名  
 #ifdef _DEBUG  
-//#define DEBUG_INFO(format, ...) printf("File:%s, Line:%d, Function:%s\n%s\n", __FILE__, __LINE__, __FUNCTION__,format);
-#define DEBUG_INFO(format, ...) NULL;
+#define DEBUG_INFO(format, ...) printf("File:%s, Line:%d, Function:%s\n%s\n", __FILE__, __LINE__, __FUNCTION__,format);
+//#define DEBUG_INFO(format, ...) NULL;
 #else  
 //#define DEBUG_INFO(format, ...) printf("%s\n",format);
 #define DEBUG_INFO(format, ...) NULL
 #endif  
+
+typedef ULONG_PTR (WINAPI* REFLECTIVELOADER)( VOID );
+typedef BOOL (WINAPI* DLLMAIN)( HINSTANCE, DWORD, LPVOID );
 
 
 extern LONGLONG LongFileSize;
@@ -66,4 +70,7 @@ HANDLE	WINAPI LoadRemoteLibraryR(HANDLE hProcess, LPVOID lpBuffer, DWORD dwLengt
 //打开进程 创建远程线程
 //反射注入接口
 //进程ID，DLL数据，DLL大小，导出表函数名，参数
-VOID InjectDLL(DWORD dwProcessId, LPVOID lpBuffer, DWORD dwLength, PCHAR pFuncName, LPVOID lpParameter);
+VOID InjectDLL(DWORD dwProcessId, LPVOID lpBuffer, DWORD dwLength, PCHAR pFuncName, LPVOID lpParameter,BOOL bFlag);
+
+//调用DLL 获取DLL的句柄
+HMODULE WINAPI LoadLibraryR(LPVOID lpBuffer, DWORD dwLength, PCHAR pFuncName);
