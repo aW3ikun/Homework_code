@@ -8,7 +8,7 @@ int main(int argc, char* argv[])
 	//char* cpDllFile = "ReflectiveDLL_Inject_x64.dll";
 	//char* cpDllFile  = "D:\\TEMP\\ReflectiveDLLInjection\\bin\\reflective_dll.x64.dll";
 	//char* cpDllFile  = "D:\\temp\\ReflectiveDLLInjection\\x64\\Release\\reflective_dll.x64.dll";
-	char* cpDllFile = "D:\\repos\\Homework_code\\C++\\Inject_Hook\\ReflectiveDLL_Inject\\bin\\ReflectiveDLL_Inject.Release.dll";
+	char* cpDllFile = ".\\ReflectiveDLL_Inject.Release.dll";
 #else 
 	char* cpDllFile = "reflective_dll.dll";
 	 
