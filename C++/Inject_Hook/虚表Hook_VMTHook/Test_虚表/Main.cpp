@@ -4,10 +4,22 @@ using namespace std;
 
 class NewBase {
 	public:
-	void Go(){ cout << "this is Base  " << endl; };
-	private:
+	//void Go(){ cout << "this is Base  " << endl; };
+	virtual void Go( ) = 0;
+	public:
+	int m_b;
 	int m_a;
 };
+class NewSub:public NewBase
+{
+	public:
+	//void Go( ) { cout << "this is NewSub  " << endl; }
+	void Go( ) { m_c += 1; }
+	public:
+	int m_c;
+
+};
+
 
 //class VirtualBase
 //{
@@ -98,8 +110,15 @@ class NewBase {
 
 int main(int argc, char* argv[])
 {
-	NewBase* base = new NewBase( );
-	base->Go( );
+
+	NewSub	sub;
+	sub.m_b = 0;
+	sub.m_a = 1;
+	auto *pt = &sub;
+	pt->m_c = 2;
+	
+	sub.Go( );
+	pt->Go( );
 
 	//VirtualBase* sv = new	SubVirtual( );
 	//SubVirtual* sub = new	SubVirtual( );
@@ -123,3 +142,5 @@ int main(int argc, char* argv[])
 	system("pause");
 	return 0;
 }
+
+
