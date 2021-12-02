@@ -633,7 +633,7 @@ HANDLE	WINAPI LoadRemoteLibraryR(HANDLE hProcess, LPVOID lpBuffer, DWORD dwLengt
 }
 
 
-//调用DLL 获取DLL的句柄
+//调用DLL 返回DLL的句柄
 HMODULE WINAPI LoadLibraryR(LPVOID lpBuffer, DWORD dwLength, PCHAR pFuncName)
 {
 	HMODULE hResult = NULL;
