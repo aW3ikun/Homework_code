@@ -78,6 +78,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -139,13 +140,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\PE\新增加一个节\pe.c" />
-    <ClCompile Include="..\..\..\PE\新增加一个节\_global.c" />
+    <ClCompile Include="..\..\PE_HANDLE_LIB\pe.c" />
+    <ClCompile Include="..\..\PE_HANDLE_LIB\_global.c" />
     <ClCompile Include="ProcessHollowing.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\PE\新增加一个节\pe.h" />
-    <ClInclude Include="..\..\..\PE\新增加一个节\_global.h" />
+    <ClInclude Include="..\..\PE_HANDLE_LIB\pe.h" />
+    <ClInclude Include="..\..\PE_HANDLE_LIB\_global.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

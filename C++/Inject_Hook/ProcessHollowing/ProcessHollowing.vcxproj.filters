@@ -24,18 +24,18 @@
     <ClCompile Include="ProcessHollowing.c">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\PE\新增加一个节\pe.c">
+    <ClCompile Include="..\..\PE_HANDLE_LIB\_global.c">
       <Filter>源文件\PE</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\PE\新增加一个节\_global.c">
+    <ClCompile Include="..\..\PE_HANDLE_LIB\pe.c">
       <Filter>源文件\PE</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\PE\新增加一个节\_global.h">
+    <ClInclude Include="..\..\PE_HANDLE_LIB\pe.h">
       <Filter>头文件\PE</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\PE\新增加一个节\pe.h">
+    <ClInclude Include="..\..\PE_HANDLE_LIB\_global.h">
       <Filter>头文件\PE</Filter>
     </ClInclude>
   </ItemGroup>
