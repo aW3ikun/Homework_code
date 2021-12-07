@@ -1,3 +1,4 @@
+// COPY https://github.com/m0n0ph1/Process-Hollowing
 #include<stdio.h>
 
 #include".\\..\\..\\PE_HANDLE_LIB\\pe.h"
@@ -20,7 +21,7 @@ typedef NTSTATUS (WINAPI* _NtUnmapViewOfSection)(
 7.恢复线程
 */
 
-void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
+void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFileName)
 {
 	DEBUG_INFO("[+]Creating Process\r\n");
 
@@ -31,12 +32,15 @@ void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
 	CONTEXT context = { 0 };
 	ULONG_PTR ulImageBase = 0;
 	DWORD dwFileSize = 0;
+	DWORD dwSizeOfImage = 0;
+
 
 	//memory of source file 
 	LPVOID lpSourceFile = NULL;
+	LPVOID lpExpendFile = NULL;
 
 	StartupInfo.cb = sizeof(StartupInfo);
-	do 
+	do
 	{
 		//创建挂起的进程
 		if ( !CreateProcessA(
@@ -44,54 +48,88 @@ void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
 			pDestCmdLine,
 			0,
 			0,
-			0,
+			FALSE,
 			CREATE_SUSPENDED,
 			0,
 			0,
 			&StartupInfo,
 			&ProcessInformation
 		) ) {
-			DEBUG_ERROR("[-]创建失败");
+			DEBUG_ERROR("[-] 创建失败");
 			break;
 		}
 
-		FARPROC pfnZwUnmapViewOfSecrtion = GetProcAddress(LoadLibraryA("ntdll.dll"), "ZwNtUnMapViewOfSection");
-		_NtUnmapViewOfSection NtUnmapViewOfSection = (_NtUnmapViewOfSection)pfnZwUnmapViewOfSecrtion;
 
-		//Get ImageBase
-		//x86 peb+0x8 / x64 peb+0x10
-		GetThreadContext(ProcessInformation.hThread, &context);
-		
-		ReadProcessMemory(ProcessInformation.hProcess,
-#ifdef _WIN64
-		(LPVOID)( context.Rbx + 0x10 ),
-#else
-		(LPVOID)( context.Ebx + 0x8 ),
-#endif
-			& ulImageBase, sizeof(ULONG_PTR), NULL);
+		DEBUG_INFO("[+] ZwNtUnMapViewOfSection");
+		FARPROC pfnZwUnmapViewOfSecrtion = GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtUnmapViewOfSection");
+		if ( !pfnZwUnmapViewOfSecrtion ) {
+			DEBUG_ERROR("[-] GetAddress NtUnmapViewOfSection Error");
+		}
+		_NtUnmapViewOfSection NtUnmapViewOfSection = (_NtUnmapViewOfSection)pfnZwUnmapViewOfSecrtion;
 
 		//unmap image
 		NtUnmapViewOfSection(ProcessInformation.hProcess, (PVOID)ulImageBase);
 
 		//ReadFile
-		lpSourceFile =  MyReadFile(pSourceFile, &dwFileSize, 0);
-
+		lpSourceFile = MyReadFile(pSourceFileName, &dwFileSize, 0);
+		if ( lpSourceFile == NULL ) {
+			DEBUG_ERROR("[-] ReadFile Error");
+			break;
+		}
 		//申请足够的空间
-		getsizeofimagfe
+		dwSizeOfImage = GetSizeOfImage((PIMAGE_DOS_HEADER)lpSourceFile);
+		lpExpendFile = VirtualAllocEx(ProcessInformation.hProcess, GetImageBase((PIMAGE_DOS_HEADER)lpSourceFile), dwSizeOfImage, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+
+		//PE修复
+		DEBUG_INFO("[+] Start Copy PE");
+		AcrossCopyHeader(ProcessInformation.hProcess, lpExpendFile, (PIMAGE_DOS_HEADER)lpSourceFile);
+		AcrossCopyAllSection (ProcessInformation.hProcess, lpExpendFile, (PIMAGE_DOS_HEADER)lpSourceFile, dwSizeOfImage);
+
+		//DEBUG_INFO("[+]Start Fix IAT and RELOC");
+		//ShellCodeRepairImportTable((PIMAGE_DOS_HEADER)lpExpendFile, GetProcAddress, LoadLibraryA);
+		//ShellCodeFixReloc((PIMAGE_DOS_HEADER)lpExpendFile, (PIMAGE_DOS_HEADER)pSourceFileName);
 
 
-	} while (0);
+		DEBUG_INFO("[+]Setting EntryPoint");
+		CONTEXT newcontext = { 0 };
+		newcontext.ContextFlags = CONTEXT_INTEGER;
+		DWORD dwImageBase = (DWORD)lpExpendFile;
+
+#ifdef _WIN64
+		context.Rax = GetAddressOfEntryPoint(ProcessInformation.hProcess,(PIMAGE_DOS_HEADER)lpExpendFile);
+#else
+		context.Eax = GetAddressOfEntryPoint(ProcessInformation.hProcess,(PIMAGE_DOS_HEADER)lpExpendFile);
+		WriteProcessMemory(ProcessInformation.hProcess, (LPVOID)( context.Ebx + 0x8 ), &dwImageBase, sizeof(DWORD), 0);
+#endif
+
+		DEBUG_INFO("[+]Setting Context");
+		if ( !SetThreadContext(ProcessInformation.hThread, &newcontext) ) {
+			DEBUG_ERROR("[-] SetThreadContext Error");
+			break;
+		}
+
+		DEBUG_INFO("[+]Resume Context");
+		if ( !ResumeThread(ProcessInformation.hThread) ) {
+			DEBUG_ERROR("[-] SetThreadContext Error");
+			break;
+		}
+
+
+	} while ( 0 );
 
 
 	//avoid leak process handle
-	CloseHandle(ProcessInformation.hProcess);
-	CloseHandle(ProcessInformation.hThread);
+	//if ( ProcessInformation.hProcess != 0 || ProcessInformation.hThread != 0 )
+	//{
+	//	CloseHandle(ProcessInformation.hProcess);
+	//	CloseHandle(ProcessInformation.hThread);
+	//}
 }
 
 int main(int argc, char* argv[])
 {
 
-	CreateHollowedProcess("calc","HelloWorld.exe");
-
+	CreateHollowedProcess("pause.exe", "HelloWorld.exe");
+	system("pause");
 	return	0;
 }

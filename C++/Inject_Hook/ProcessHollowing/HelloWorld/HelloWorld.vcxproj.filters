@@ -13,30 +13,10 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="源文件\PE">
-      <UniqueIdentifier>{c1ffa7d3-693b-403b-b785-eb512291d52c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="头文件\PE">
-      <UniqueIdentifier>{b5abfa43-245e-470e-a1a5-1398a1e98e07}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\PE_HANDLE_LIB\_global.c">
-      <Filter>源文件\PE</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\PE_HANDLE_LIB\pe.c">
-      <Filter>源文件\PE</Filter>
-    </ClCompile>
-    <ClCompile Include="ProcessHollowing.c">
+    <ClCompile Include="Main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\PE_HANDLE_LIB\pe.h">
-      <Filter>头文件\PE</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\PE_HANDLE_LIB\_global.h">
-      <Filter>头文件\PE</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

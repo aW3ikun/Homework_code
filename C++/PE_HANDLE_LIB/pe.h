@@ -47,6 +47,8 @@ DWORD GetSizeOfSectionHeader( );
 DWORD	GetSizeOfImage(PIMAGE_DOS_HEADER pDosHeader);
 //获取DOS+DOS_Stub
 DWORD	GetSizeOfDosAndStub(PIMAGE_DOS_HEADER pDosHeader);
+//获取imageBase
+DWORD GetImageBase(PIMAGE_DOS_HEADER pDosHeader);
 //获取Dos头大小
 inline DWORD	GetSizeOfDos( );
 //取模判断大小
@@ -76,6 +78,8 @@ DWORD	GetAllSizeOfSection(PIMAGE_DOS_HEADER pDosHeader);
 inline ULONG_PTR GetDataDirectoryRVA(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectoryEntry);
 //获取特定IMAGE_DATA_DIRECTORY的Size
 ULONG_PTR GetDataDirectorySize(PIMAGE_DOS_HEADER pDosHeader, WORD	wDirectorySize);
+//获取当前的Entrypoint
+ULONG_PTR GetAddressOfEntryPoint(HANDLE hProcess,PIMAGE_DOS_HEADER pDosHeader);
 //判断节区空间是否空余空间 >=0x50
 BOOL	JudgeSize(PIMAGE_DOS_HEADER	pDosHeader);
 
@@ -128,3 +132,8 @@ VOID	ShellCodeFixReloc(PIMAGE_DOS_HEADER	pMemory, PIMAGE_DOS_HEADER pDosHeader);
 
 //ShellCode 搜寻未展开导出表函数
 DWORD	GetFileExportFunctionOffset(PIMAGE_DOS_HEADER	pDosHeader, PCHAR pFuncName);
+
+//跨进程拷贝PE头
+BOOL AcrossCopyHeader(HANDLE hProcess,LPVOID	pDst, PIMAGE_DOS_HEADER	pDosHeader);
+//跨进程拷贝区块
+BOOL AcrossCopyAllSection (HANDLE hProcess,LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile, DWORD dwSizeOfImage);

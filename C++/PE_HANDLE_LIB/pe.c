@@ -97,12 +97,32 @@ DWORD	GetSizeOfImage(PIMAGE_DOS_HEADER pDosHeader)
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader (pDosHeader);
 	return pNtHeader->OptionalHeader.SizeOfImage;
 }
-
+//获取ImageBase
+DWORD GetImageBase(PIMAGE_DOS_HEADER pDosHeader)
+{
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader (pDosHeader);
+	return pNtHeader->OptionalHeader.ImageBase;
+}
 //获取SectionTable大小
 DWORD GetSizeOfSectionTable (PIMAGE_DOS_HEADER pDosHeader)
 {
 	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader (pDosHeader);
 	return sizeof (IMAGE_SECTION_HEADER) * ( pNtHeader->FileHeader.NumberOfSections );
+}
+//获取当前的Entrypoint
+ULONG_PTR GetAddressOfEntryPoint(HANDLE hProcess, PIMAGE_DOS_HEADER pDosHeader)
+{
+	PIMAGE_NT_HEADERS pNtHeader;
+	if ( hProcess != NULL )
+	{
+		BYTE buffer[1000] = { 0 };
+		ReadProcessMemory(hProcess, pDosHeader, &buffer, 1000, 0);
+		pNtHeader = GetNtHeader ((PIMAGE_DOS_HEADER)buffer);
+	}
+	else {
+		pNtHeader = GetNtHeader (pDosHeader);
+	}
+	return (ULONG_PTR)( pNtHeader->OptionalHeader.AddressOfEntryPoint ) + (ULONG_PTR)pDosHeader;
 }
 
 //获取内存对齐和文件对齐
@@ -582,20 +602,20 @@ VOID	ShellCodeFixReloc(PIMAGE_DOS_HEADER	pMemory, PIMAGE_DOS_HEADER pDosHeader)
 		uiReloc = (ULONG_PTR)pMemory + uiRva;
 
 		//遍历所有区块
-		while ( ( (PIMAGE_BASE_RELOCATION)uiReloc )->SizeOfBlock ) 
+		while ( ( (PIMAGE_BASE_RELOCATION)uiReloc )->SizeOfBlock )
 		{
 			//定位块开头
 			uiMemVa = (ULONG_PTR)pMemory + (ULONG_PTR)( ( (PIMAGE_BASE_RELOCATION)uiReloc )->VirtualAddress );
 
 			//获取块数量
-			uiBlockNum = (ULONG_PTR)(( ( (PIMAGE_BASE_RELOCATION)uiReloc )->SizeOfBlock ) - sizeof(IMAGE_BASE_RELOCATION) / sizeof(IMAGE_RELOC));
+			uiBlockNum = (ULONG_PTR)( ( ( (PIMAGE_BASE_RELOCATION)uiReloc )->SizeOfBlock ) - sizeof(IMAGE_BASE_RELOCATION) / sizeof(IMAGE_RELOC) );
 
 			//定位一个块
 			uiBlock = uiReloc + sizeof(IMAGE_BASE_RELOCATION);
 
 			//VirtualAddress(1000) + Offset(420) = 1420(RVA)
 			//再加上ImageBase
-			
+
 			while ( uiBlockNum-- ) {
 				if ( ( (PIMAGE_RELOC)uiBlock )->type == IMAGE_REL_BASED_DIR64 )
 					DEREF_ULONGPTR(uiMemVa + ( (PIMAGE_RELOC)uiBlock )->offset) += uiValue;
@@ -682,4 +702,43 @@ DWORD	GetFileExportFunctionOffset(PIMAGE_DOS_HEADER	pDosHeader, PCHAR pFuncName)
 
 	return 0;
 
+}
+
+//跨进程拷贝PE头
+BOOL AcrossCopyHeader(HANDLE hProcess, LPVOID	pDst, PIMAGE_DOS_HEADER	pDosHeader)
+{
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader (pDosHeader);
+	DWORD	dwSizeOfHeader = pNtHeader->OptionalHeader.SizeOfHeaders;
+	//CopyMemory(pDst, pDosHeader, dwSizeOfHeader);
+	WriteProcessMemory(hProcess, pDst, pDosHeader, dwSizeOfHeader, NULL);
+	//while ( dwSizeOfHeader-- )
+	//	*( (BYTE*)pDst )++ = *( (BYTE*)pDosHeader )++;
+}
+//跨进程拷贝区块
+BOOL AcrossCopyAllSection (HANDLE hProcess, LPVOID	pMemory, PIMAGE_DOS_HEADER	pFile, DWORD dwSizeOfImage)
+{
+	//获取SectionTable
+	PIMAGE_NT_HEADERS pNtHeader = GetNtHeader (pFile);
+	PIMAGE_SECTION_HEADER pSection = IMAGE_FIRST_SECTION (pNtHeader);
+	PIMAGE_SECTION_HEADER pFirstSection = pSection;
+	DWORD dwNumberOfSection = GetNumberOfSection (pFile);
+
+	for ( int i = 0; i < dwNumberOfSection; i++ ) {
+		ULONG_PTR dwVirtualAddress = pSection->VirtualAddress;
+		ULONG_PTR dwSizeOfRawData = pSection->SizeOfRawData;
+		ULONG_PTR dwPointerToRawData = pSection->PointerToRawData;
+
+		LPVOID lpRawOfData = (LPVOID)( (ULONG_PTR)pFile + dwPointerToRawData );
+		LPVOID lpMemory = (LPVOID)( (ULONG_PTR)pMemory + dwVirtualAddress );
+
+		if ( ( (ULONG_PTR)lpMemory + dwSizeOfRawData ) > ((ULONG_PTR)pMemory + dwSizeOfImage) ) {
+			DEBUG_INFO ("[-]超越边界\n");
+			return FALSE;
+		}
+		//CopyMemory(lpMemory, lpRawOfData, dwSizeOfRawData);
+		WriteProcessMemory(hProcess, lpMemory, lpRawOfData, dwSizeOfRawData, NULL);
+		//while ( dwSizeOfRawData-- )
+		//	*( (BYTE*)lpMemory )++ = *( (BYTE*)lpRawOfData )++;
+		pSection++;
+	}
 }
